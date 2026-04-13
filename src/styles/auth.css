@@ -1,0 +1,263 @@
+/* ============================================================
+   AUTH PAGES — TICKETY  (Login + Registration)
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --crimson:      #DC0F0F;
+  --crimson-dim:  rgba(220,15,15,0.12);
+  --crimson-glow: rgba(220,15,15,0.35);
+  --surface:      #0A0A0A;
+  --card:         #141414;
+  --card2:        #1C1C1C;
+  --border:       rgba(255,255,255,0.08);
+  --border-focus: rgba(220,15,15,0.6);
+  --text:         #F0F0F0;
+  --muted:        #666;
+  --radius:       13px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+/* ── ROOT LAYOUT ── */
+.auth-root {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* BLOBS */
+.auth-blob { position: fixed; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0; }
+.auth-blob-tl { width: 500px; height: 500px; top: -200px; left: -100px;
+  background: radial-gradient(circle, rgba(220,15,15,0.12) 0%, transparent 70%); }
+.auth-blob-br { width: 400px; height: 400px; bottom: -150px; right: -100px;
+  background: radial-gradient(circle, rgba(220,15,15,0.09) 0%, transparent 70%); }
+
+/* ── LEFT PANEL ── */
+.auth-left {
+  flex: 0 0 420px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 40px 48px;
+  position: relative;
+  z-index: 2;
+}
+
+.auth-brand {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: auto; cursor: pointer;
+}
+.auth-brand-icon { font-size: 22px; }
+.auth-brand-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 24px; letter-spacing: 5px; color: var(--text);
+}
+
+.auth-left-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+.auth-left-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 48px; line-height: 1.0; letter-spacing: 2px;
+  color: var(--text); margin-bottom: 16px; margin-top: 48px;
+}
+
+.auth-left-sub { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 40px; }
+
+.auth-left-features { display: flex; flex-direction: column; gap: 14px; }
+.feature-row { display: flex; align-items: center; gap: 12px; font-size: 14px; color: var(--muted); }
+.feature-check {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--crimson-dim); border: 1px solid rgba(220,15,15,0.3);
+  color: var(--crimson); display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+/* STEP INDICATORS */
+.reg-steps {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 40px; margin-top: 48px;
+}
+.reg-step { display: flex; align-items: center; }
+.rs-circle {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--card2); border: 1px solid var(--border);
+  color: var(--muted); font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .3s;
+}
+.reg-step.active .rs-circle { background: var(--crimson); border-color: var(--crimson); color: #fff; }
+.reg-step.done  .rs-circle  { background: var(--crimson-dim); border-color: rgba(220,15,15,.4); color: var(--crimson); }
+.rs-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 1px; margin-left: 8px; }
+.reg-step.active .rs-label { color: var(--text); }
+.rs-line { width: 32px; height: 1px; background: var(--border); margin: 0 8px; }
+
+/* ── RIGHT PANEL ── */
+.auth-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── AUTH CARD ── */
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+}
+
+.auth-card-badge {
+  display: inline-flex; align-items: center;
+  background: var(--crimson-dim); border: 1px solid rgba(220,15,15,0.25);
+  color: var(--crimson); padding: 6px 14px; border-radius: 30px;
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  margin-bottom: 24px;
+}
+
+.auth-card-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px; letter-spacing: 2px; color: var(--text);
+  margin-bottom: 8px;
+}
+.auth-card-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+/* ── ERROR / SUCCESS ── */
+.auth-error {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(220,15,15,0.1); border: 1px solid rgba(220,15,15,0.3);
+  color: var(--crimson); padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; margin-bottom: 20px;
+}
+.auth-error-icon { font-size: 15px; }
+.auth-success {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3);
+  color: #22c55e; padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; margin-bottom: 20px;
+}
+
+/* ── FORM ── */
+.auth-form { display: flex; flex-direction: column; gap: 20px; }
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+.form-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--muted); }
+
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-icon {
+  position: absolute; left: 14px;
+  color: var(--muted); display: flex; align-items: center;
+}
+.form-input {
+  width: 100%;
+  background: var(--card2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 15px; padding: 14px 44px;
+  border-radius: var(--radius); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-input::placeholder { color: var(--muted); }
+.form-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(220,15,15,0.08);
+}
+
+.input-eye {
+  position: absolute; right: 14px; background: none; border: none;
+  color: var(--muted); cursor: pointer; display: flex; align-items: center;
+  padding: 4px; transition: color .2s;
+}
+.input-eye:hover { color: var(--text); }
+
+/* ── SUBMIT ── */
+.auth-submit {
+  width: 100%; height: 52px;
+  background: var(--crimson); border: none;
+  color: #fff; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 800; letter-spacing: 2px;
+  border-radius: var(--radius); cursor: pointer;
+  transition: transform .2s, box-shadow .2s, opacity .2s;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 24px rgba(220,15,15,0.3);
+  margin-top: 8px;
+}
+.auth-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(220,15,15,0.45);
+}
+.auth-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+/* SPINNER */
+.auth-spinner {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* DIVIDER */
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 24px 0;
+  color: var(--muted); font-size: 13px;
+}
+.auth-divider::before,
+.auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.auth-switch { font-size: 14px; color: var(--muted); text-align: center; }
+.auth-link {
+  background: none; border: none; color: var(--crimson);
+  font-weight: 700; cursor: pointer; font-size: 14px;
+  padding: 0; text-decoration: none;
+}
+.auth-link:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── OTP GRID ── */
+.otp-grid {
+  display: flex; gap: 10px; justify-content: center;
+  margin: 32px 0 24px;
+}
+.otp-box {
+  width: 52px; height: 62px;
+  background: var(--card2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px; text-align: center;
+  border-radius: var(--radius); outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.otp-box:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(220,15,15,0.1); }
+.otp-box.otp-filled { border-color: rgba(220,15,15,0.4); color: var(--crimson); }
+
+.otp-resend {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; font-size: 13px; color: var(--muted); margin-top: 8px;
+}
+.otp-expiry {
+  text-align: center; font-size: 11px; color: var(--muted);
+  opacity: .5; margin-top: 10px;
+}
+
+/* ── STEP 3 SPECIFICS ── */
+.step3-icon { font-size: 42px; margin-bottom: 16px; }
+
+.role-badge-row { margin: 24px 0 8px; }
+.role-badge {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--card2); border: 1px solid rgba(220,15,15,0.2);
+  padding: 16px; border-radius: var(--radius);
+}
+.rb-icon { font-size: 26px; }
+.rb-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.rb-sub { font-size: 12px; color: var(--muted); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  .auth-left { display: none; }
+  .auth-right { padding: 24px; }
+}
