@@ -14,7 +14,7 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
 const WEB_HEADERS = {
   'Content-Type': 'application/json',
   'X-App-Source': 'web',
-};
+};// ===
 
 // ----------------------------------------------------------
 // PRIVATE: Generic POST handler

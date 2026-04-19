@@ -7,7 +7,7 @@ import { saveSession }   from '../services/session.service';
 import { useAuth }       from '../hooks/useAuth';
 import { validateServiceName } from '../utils/validators';
 import { ROLE_LABELS }   from '../utils/constants';
-
+// ===test
 // =============================================================
 // SERVICE SETUP PAGE  (Step 3 of registration)
 // Responsibilities:

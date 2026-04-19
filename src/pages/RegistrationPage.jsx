@@ -128,7 +128,7 @@ export default function RegistrationPage() {
       </p>
     </>
   );
-
+// ===test
   return (
     <AuthLayout leftContent={leftContent}>
 

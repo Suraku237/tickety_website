@@ -12,6 +12,7 @@ import { validateEmail, validatePassword, validate } from '../utils/validators';
 // OOP Principle: Encapsulation, Single Responsibility
 // All HTTP logic delegated to api.service.js
 // =============================================================
+// ===test
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loading, error, setError, submit } = useAuth();

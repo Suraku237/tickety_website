@@ -6,6 +6,7 @@ import '../styles/dashboard.css';
 // OOP Principle: Single Responsibility, Encapsulation
 // All session logic delegated to useSession hook
 // =============================================================
+// ===test
 export default function DashboardPage() {
   const { user, logout } = useSession();
 
