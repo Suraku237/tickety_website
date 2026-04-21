@@ -59,7 +59,7 @@ export default function LandingPage() {
       <nav className="land-nav">
         <div className="land-brand">
           <span className="brand-icon">🎟</span>
-          <span className="brand-name">TICKETYYYYYYYYY</span>
+          <span className="brand-name">TICKETY</span>
         </div>
         <button className="nav-signin" onClick={() => navigate('/login')}>
           Sign In
@@ -145,15 +145,18 @@ export default function LandingPage() {
             Join a queue, track your position in real time, and get notified
             — no paper, no waiting in line.
           </p>
-          <a href="#" className="btn-download">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.37c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.54 4.02zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+          <a href="/downloads/app-release.apk" download className="btn-download">
+          {/* Standard Download Icon */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
             <span>
-              <small>Download on the</small>
-              App Store
-            </span>
-          </a>
+              <small>Download for</small>
+              Android (APK)
+              </span>
+        </a>
         </div>
         <div className="ms-right">
           <div className="phone-mockup">
