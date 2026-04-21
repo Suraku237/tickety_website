@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+# Setting the environment variable globally for this workflow
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  
 jobs:
   deploy:
     name: Build and Deploy
