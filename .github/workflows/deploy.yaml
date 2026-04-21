@@ -1,0 +1,49 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key:       ${{ secrets.VPS_SSH_KEY }}
+          port:     ${{ secrets.VPS_PORT }}
+          script: |
+            echo "🚀 Starting Frontend deployment..."
+
+            # Navigate to the website folder
+            cd /var/www/tickety_website
+
+            echo "📥 Pulling latest code..."
+            git pull origin main
+
+            echo "📦 Installing dependencies..."
+            npm install --quiet
+
+            echo "🏗️ Building the project..."
+            npm run build
+
+            echo "🔒 Setting permissions..."
+            chown -R www-data:www-data /var/www/tickety_website/dist
+            chmod -R 755 /var/www/tickety_website/dist
+
+            echo "🔄 Restarting Nginx..."
+            sudo systemctl restart nginx
+
+            sleep 2
+
+            echo "✅ Checking Nginx status..."
+            systemctl is-active nginx && echo "Nginx is running!" || echo "❌ Nginx failed!"
