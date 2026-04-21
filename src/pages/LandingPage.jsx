@@ -59,7 +59,7 @@ export default function LandingPage() {
       <nav className="land-nav">
         <div className="land-brand">
           <span className="brand-icon">🎟</span>
-          <span className="brand-name">TICKETY</span>
+          <span className="brand-name">TICKETYYYYYYYYY</span>
         </div>
         <button className="nav-signin" onClick={() => navigate('/login')}>
           Sign In
