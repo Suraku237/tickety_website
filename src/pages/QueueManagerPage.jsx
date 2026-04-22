@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSession }  from '../hooks/useSession';
 import QrModal         from '../components/QrModal';
 import '../styles/dashboard.css';
-import '../styles/queueManager.css';
+import '../styles/queuemanager.css';
 
 // =============================================================
 // QUEUE MANAGER PAGE

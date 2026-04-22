@@ -1,14 +1,15 @@
+import { useNavigate } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
 import '../styles/dashboard.css';
 
 // =============================================================
-// DASHBOARD PAGE  (Crash-test placeholder)
+// DASHBOARD PAGE
 // OOP Principle: Single Responsibility, Encapsulation
 // All session logic delegated to useSession hook
 // =============================================================
-// ===test
 export default function DashboardPage() {
   const { user, logout } = useSession();
+  const navigate = useNavigate();
 
   if (!user) return null;
 
@@ -32,13 +33,24 @@ export default function DashboardPage() {
     { label: 'Avg. Wait Time', value: '—', icon: '⏱',  color: '#F59E0B' },
   ];
 
+  // 'path' is set for modules that are ready; absent = coming soon
   const modules = [
-    { icon: '📋', title: 'Queue Manager',  desc: 'Create and manage service queues'   },
+    { icon: '📋', title: 'Queue Manager',  desc: 'Create and manage service queues',   path: '/queue-management' },
     { icon: '🎟', title: 'Tickets',         desc: 'Monitor and call active tickets'    },
     { icon: '👥', title: 'Team',            desc: 'Invite managers and agents'         },
     { icon: '🖥', title: 'Counter Display', desc: 'Live board for counter screens'     },
     { icon: '📊', title: 'Analytics',       desc: 'Queue performance & reports'        },
     { icon: '⚙️', title: 'Settings',        desc: 'Service config & preferences'       },
+  ];
+
+  // Sidebar nav items — 'path' marks live items
+  const navItems = [
+    { icon: '🏠', label: 'Dashboard',     path: '/dashboard'         },
+    { icon: '📋', label: 'Queue Manager', path: '/queue-management'  },
+    { icon: '🎟', label: 'Tickets'                                   },
+    { icon: '👥', label: 'Team'                                      },
+    { icon: '📊', label: 'Analytics'                                 },
+    { icon: '⚙️', label: 'Settings'                                  },
   ];
 
   return (
@@ -53,12 +65,23 @@ export default function DashboardPage() {
         </div>
 
         <nav className="db-nav">
-          <div className="db-nav-item active"><span>🏠</span> Dashboard</div>
-          {['Queue Manager', 'Tickets', 'Team', 'Analytics', 'Settings'].map(item => (
-            <div key={item} className="db-nav-item disabled">
-              <span className="db-nav-soon">SOON</span>{item}
-            </div>
-          ))}
+          {navItems.map(item => {
+            const isActive  = window.location.pathname === item.path;
+            const isEnabled = !!item.path;
+
+            return (
+              <div
+                key={item.label}
+                className={`db-nav-item ${isActive ? 'active' : ''} ${!isEnabled ? 'disabled' : ''}`}
+                onClick={() => isEnabled && navigate(item.path)}
+                style={{ cursor: isEnabled ? 'pointer' : 'default' }}
+              >
+                {!isEnabled && <span className="db-nav-soon">SOON</span>}
+                <span>{item.icon}</span>
+                {item.label}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="db-sidebar-footer">
@@ -129,16 +152,27 @@ export default function DashboardPage() {
 
         <h2 className="dash-section-title">MODULES</h2>
         <div className="dash-modules">
-          {modules.map(m => (
-            <div key={m.title} className="module-card">
-              <div className="mc-top">
-                <span className="mc-icon">{m.icon}</span>
-                <span className="mc-tag">SOON</span>
+          {modules.map(m => {
+            const isLive = !!m.path;
+            return (
+              <div
+                key={m.title}
+                className={`module-card ${isLive ? 'mc-live' : ''}`}
+                onClick={() => isLive && navigate(m.path)}
+                style={{ cursor: isLive ? 'pointer' : 'default' }}
+              >
+                <div className="mc-top">
+                  <span className="mc-icon">{m.icon}</span>
+                  {isLive
+                    ? <span className="mc-tag mc-tag-live">OPEN →</span>
+                    : <span className="mc-tag">SOON</span>
+                  }
+                </div>
+                <p className="mc-title">{m.title}</p>
+                <p className="mc-desc">{m.desc}</p>
               </div>
-              <p className="mc-title">{m.title}</p>
-              <p className="mc-desc">{m.desc}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <p className="dash-footer">TICKETY v1.0.0 — Smart Queue Management System</p>
