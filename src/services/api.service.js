@@ -9,7 +9,7 @@
 //   (mirrors ApiService singleton in the Flutter app)
 // =============================================================
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://109.199.120.38:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://tickety.duckdns.org/api';
 
 const WEB_HEADERS = {
   'Content-Type': 'application/json',
