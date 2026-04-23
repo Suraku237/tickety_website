@@ -1,5 +1,6 @@
-import { restoreSession, clearSession } from '../services/session.service';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { restoreSession, clearSession } from '../services/session.service';
 
 // =============================================================
 // USE SESSION  (Custom Hook)
@@ -10,7 +11,10 @@ import { useNavigate } from 'react-router-dom';
 // =============================================================
 export function useSession() {
   const navigate = useNavigate();
-  const user     = restoreSession();
+
+  // useState lazy initializer — runs once on mount so React
+  // properly tracks the value and triggers re-renders
+  const [user] = useState(() => restoreSession());
 
   const logout = () => {
     clearSession();
@@ -18,4 +22,4 @@ export function useSession() {
   };
 
   return { user, logout };
-}// ===
+}

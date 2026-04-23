@@ -1,6 +1,6 @@
 /* ============================================================
    DASHBOARD — TICKETY
-   ============================================================ss */
+   ============================================================ */
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
@@ -14,10 +14,31 @@
   --muted:       #666;
   --radius:      13px;
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; }
 
-.dash-root { display: flex; min-height: 100vh; position: relative; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Override index.css #root constraints for dashboard layout */
+#root {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-inline: none !important;
+  text-align: left !important;
+  display: block !important;
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+}
+
+.dash-root {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  background: var(--surface);
+}
+
 .dash-glow-tl {
   position: fixed; width: 500px; height: 500px; top: -200px; left: 180px;
   border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0;
@@ -51,12 +72,16 @@ body { background: var(--surface); color: var(--text); font-family: 'DM Sans', s
   cursor: pointer; transition: all .2s;
   position: relative;
 }
+.db-nav-item:not(.disabled):not(.active):hover {
+  background: var(--card2);
+  color: var(--text);
+}
 .db-nav-item.active {
   background: var(--crimson-dim); color: var(--crimson);
   border: 1px solid rgba(220,15,15,0.2);
 }
 .db-nav-item.disabled { cursor: default; }
-.db-nav-item.disabled:hover { color: var(--muted); }
+.db-nav-item.disabled:hover { color: var(--muted); background: none; }
 .db-nav-soon {
   font-size: 8px; font-weight: 800; letter-spacing: 1px;
   color: var(--muted); background: var(--card2);
@@ -100,7 +125,10 @@ body { background: var(--surface); color: var(--text); font-family: 'DM Sans', s
   font-family: 'Bebas Neue', sans-serif;
   font-size: 40px; letter-spacing: 2px; color: var(--text);
 }
-.dash-topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.dash-topbar-right {
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: wrap; justify-content: flex-end;
+}
 .dash-service-badge {
   background: var(--card); border: 1px solid var(--border);
   color: var(--text); padding: 8px 16px; border-radius: 30px;
@@ -137,7 +165,10 @@ body { background: var(--surface); color: var(--text); font-family: 'DM Sans', s
 .dwb-icon { font-size: 56px; flex-shrink: 0; }
 
 /* STATS */
-.dash-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+.dash-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 40px;
+}
 .stat-card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 24px 20px;
@@ -148,41 +179,73 @@ body { background: var(--surface); color: var(--text); font-family: 'DM Sans', s
   display: flex; align-items: center; justify-content: center;
   font-size: 18px;
 }
-.sc-val { font-family: 'Bebas Neue', sans-serif; font-size: 36px; color: var(--text); line-height: 1; }
-.sc-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 1px; }
+.sc-val {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; color: var(--text); line-height: 1;
+}
+.sc-label {
+  font-size: 12px; color: var(--muted); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 1px;
+}
 
 /* MODULES */
 .dash-section-title {
   font-size: 11px; font-weight: 700; letter-spacing: 3px;
   color: var(--muted); margin-bottom: 16px;
 }
-.dash-modules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 48px; }
+.dash-modules {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 16px; margin-bottom: 48px;
+}
 .module-card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 24px;
-  transition: border-color .2s;
+  transition: border-color .2s, transform .2s;
 }
 .module-card:hover { border-color: rgba(220,15,15,0.25); }
-.mc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+
+/* Live module card (Queue Manager) */
+.module-card.mc-live {
+  border-color: rgba(220,15,15,0.3);
+}
+.module-card.mc-live:hover {
+  border-color: var(--crimson);
+  transform: translateY(-2px);
+}
+
+.mc-top {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 16px;
+}
 .mc-icon { font-size: 24px; }
 .mc-tag {
   font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
   color: var(--muted); background: var(--card2);
   padding: 3px 8px; border-radius: 5px; border: 1px solid var(--border);
 }
+/* Live tag override */
+.mc-tag.mc-tag-live {
+  color: var(--crimson);
+  background: var(--crimson-dim);
+  border-color: rgba(220,15,15,0.3);
+}
+
 .mc-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
-.mc-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.mc-desc  { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
-.dash-footer { text-align: center; font-size: 11px; color: var(--muted); opacity: .4; padding-bottom: 8px; }
+.dash-footer {
+  text-align: center; font-size: 11px;
+  color: var(--muted); opacity: .4; padding-bottom: 8px;
+}
 
-/* RESPONSIVE */
+/* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
   .dash-stats   { grid-template-columns: repeat(2, 1fr); }
   .dash-modules { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 700px) {
   .dash-sidebar { display: none; }
-  .dash-main { padding: 24px; }
+  .dash-main    { padding: 24px; }
   .dash-stats   { grid-template-columns: 1fr 1fr; }
   .dash-modules { grid-template-columns: 1fr; }
   .dash-welcome-banner { flex-direction: column; gap: 20px; }

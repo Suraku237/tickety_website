@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AuthLayout     from '../components/AuthLayout';
-import FormField      from '../components/FormField';
-import { login }      from '../services/api.service';
+import AuthLayout      from '../components/AuthLayout';
+import FormField       from '../components/FormField';
+import { login }       from '../services/api.service';
 import { saveSession } from '../services/session.service';
-import { useAuth }    from '../hooks/useAuth';
+import { useAuth }     from '../hooks/useAuth';
 import { validateEmail, validatePassword, validate } from '../utils/validators';
 
 // =============================================================
@@ -12,7 +12,6 @@ import { validateEmail, validatePassword, validate } from '../utils/validators';
 // OOP Principle: Encapsulation, Single Responsibility
 // All HTTP logic delegated to api.service.js
 // =============================================================
-// ===test
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loading, error, setError, submit } = useAuth();
@@ -36,7 +35,16 @@ export default function LoginPage() {
       });
 
       if (data.success) {
-        saveSession(data);
+        // Save only the user fields — not the entire API response object
+        saveSession({
+          user_id:      data.user_id      ?? data.id,
+          username:     data.username,
+          email:        data.email,
+          role:         data.role,
+          admin_role:   data.admin_role,
+          service_id:   data.service_id,
+          service_name: data.service_name,
+        });
         navigate('/dashboard');
       } else if (data.statusCode === 403 && data.message?.includes('verify')) {
         navigate('/verify', { state: { email: email.toLowerCase().trim() } });
