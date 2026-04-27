@@ -1,0 +1,94 @@
+/* ============================================================
+   TICKETY — GLOBAL CSS VARIABLES
+   Dark mode is the default (no attribute needed).
+   Light mode activates when <html data-theme="light">.
+   All other CSS files use var(--x) and inherit automatically.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+/* ── DARK MODE (default) ── */
+:root {
+  --crimson:      #DC0F0F;
+  --crimson-dim:  rgba(220, 15, 15, 0.12);
+  --crimson-glow: rgba(220, 15, 15, 0.35);
+
+  --surface:      #0A0A0A;
+  --card:         #141414;
+  --card2:        #1A1A1A;
+  --border:       rgba(255, 255, 255, 0.07);
+  --border-focus: rgba(220, 15, 15, 0.6);
+
+  --text:         #F0F0F0;
+  --text-sec:     #BBBBBB;
+  --muted:        #666666;
+  --muted2:       #444444;
+  --hint:         #2A2A2A;
+
+  --radius-sm:    8px;
+  --radius-md:    13px;
+  --radius-lg:    16px;
+
+  --shadow-card:  0 4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 8px 48px rgba(0, 0, 0, 0.6);
+}
+
+/* ── LIGHT MODE ── */
+[data-theme="light"] {
+  --surface:      #F2F2F2;
+  --card:         #FFFFFF;
+  --card2:        #F7F7F7;
+  --border:       rgba(0, 0, 0, 0.09);
+  --border-focus: rgba(220, 15, 15, 0.5);
+
+  --text:         #0D0D0D;
+  --text-sec:     #333333;
+  --muted:        #888888;
+  --muted2:       #AAAAAA;
+  --hint:         #E0E0E0;
+
+  --shadow-card:  0 2px 16px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 8px 48px rgba(0, 0, 0, 0.18);
+
+  /* Crimson stays the same in both modes — it's the brand accent */
+  --crimson:      #DC0F0F;
+  --crimson-dim:  rgba(220, 15, 15, 0.09);
+  --crimson-glow: rgba(220, 15, 15, 0.25);
+}
+
+/* ── RESET ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* Smooth transition when switching themes */
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+body {
+  background:  var(--surface);
+  color:       var(--text);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth transition on all elements for theme switch */
+*, *::before, *::after {
+  transition:
+    background-color 0.2s ease,
+    border-color     0.2s ease,
+    color            0.15s ease,
+    box-shadow       0.2s ease;
+}
+
+/* Exclude transitions on elements that shouldn't animate */
+button, input, textarea, select {
+  font-family: inherit;
+}
+
+a {
+  color: var(--crimson);
+  text-decoration: none;
+}
