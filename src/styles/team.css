@@ -1,0 +1,53 @@
+/* ============================================================ TEAM PAGE ============================================================ */
+.tp-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+.tp-stat { background: var(--card); border: 1px solid var(--border); border-radius: 13px; padding: 20px 22px; display: flex; flex-direction: column; gap: 6px; }
+.tp-stat-val   { font-family: 'Bebas Neue', sans-serif; font-size: 36px; line-height: 1; }
+.tp-stat-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+.tp-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+.tp-filters { display: flex; gap: 6px; }
+.tp-filter-btn { background: var(--card); border: 1px solid var(--border); color: var(--muted); font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.tp-filter-btn.active { background: var(--crimson-dim); border-color: rgba(220,15,15,.3); color: var(--crimson); }
+.tp-invite-btn { background: var(--crimson); color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.tp-invite-btn:hover { opacity: .85; }
+.tp-table-wrap { overflow-x: auto; }
+.tp-table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.tp-table thead tr { border-bottom: 1px solid var(--border); }
+.tp-table th { padding: 13px 20px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+.tp-table td { padding: 14px 20px; }
+.tp-tr { border-bottom: 1px solid var(--border); }
+.tp-tr:last-child { border-bottom: none; }
+.tp-tr:hover { background: var(--card2); }
+.tp-member-cell { display: flex; align-items: center; gap: 12px; }
+.tp-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+.tp-member-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.tp-td-muted { color: var(--muted); font-size: 13px; }
+.tp-role-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; }
+.tp-delete-btn { background: none; border: 1px solid var(--border); color: var(--muted); padding: 6px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; }
+.tp-delete-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+.tp-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 200; }
+.tp-modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 36px; width: 440px; display: flex; flex-direction: column; gap: 14px; position: relative; box-shadow: 0 8px 48px rgba(0,0,0,.25); }
+.tp-modal--sm { width: 360px; align-items: center; text-align: center; }
+.tp-modal-close { position: absolute; top: 16px; right: 16px; background: var(--card2); border: 1px solid var(--border); color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 12px; }
+.tp-modal-icon  { font-size: 36px; }
+.tp-modal-label { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--muted); }
+.tp-modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; color: var(--text); margin: 0; }
+.tp-modal-sub   { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.tp-role-picker { display: flex; flex-direction: column; gap: 10px; }
+.tp-role-option { display: flex; align-items: center; gap: 14px; background: var(--card2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; cursor: pointer; position: relative; }
+.tp-role-option:hover  { border-color: rgba(220,15,15,.3); }
+.tp-role-option.active { border-color: var(--crimson); background: var(--crimson-dim); }
+.tp-role-option-icon  { font-size: 22px; flex-shrink: 0; }
+.tp-role-option-title { font-size: 14px; font-weight: 700; color: var(--text); }
+.tp-role-option-sub   { font-size: 12px; color: var(--muted); }
+.tp-role-check { position: absolute; right: 14px; color: var(--crimson); font-weight: 700; font-size: 16px; }
+.tp-invite-generate-btn { background: var(--crimson); color: #fff; border: none; padding: 12px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.tp-invite-generate-btn:hover { opacity: .85; }
+.tp-link-box { display: flex; align-items: center; gap: 10px; background: var(--card2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.tp-link-text { flex: 1; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tp-copy-btn { background: var(--crimson); color: #fff; border: none; padding: 7px 16px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; flex-shrink: 0; }
+.tp-modal-actions { display: flex; gap: 10px; width: 100%; margin-top: 4px; }
+.tp-btn-ghost  { flex: 1; background: none; border: 1px solid var(--border); color: var(--muted); padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.tp-btn-ghost:hover  { border-color: var(--crimson); color: var(--crimson); }
+.tp-btn-danger { flex: 1; background: rgba(220,15,15,.1); border: 1px solid rgba(220,15,15,.3); color: var(--crimson); padding: 10px; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.tp-btn-danger:hover { background: rgba(220,15,15,.2); }
+@media (max-width: 900px) { .tp-stats { grid-template-columns: repeat(2,1fr); } }
