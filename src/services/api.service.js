@@ -11,20 +11,36 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://109.199.120.38:5000/api';
 
+let authToken = null;
+
 const WEB_HEADERS = {
   'Content-Type': 'application/json',
   'X-App-Source': 'web',
-};// ===
+};
+
+// Set auth token for authenticated requests
+export function setAuthToken(token) {
+  authToken = token;
+}
+
+// Get headers with optional auth
+function getHeaders(includeAuth = false) {
+  const headers = { ...WEB_HEADERS };
+  if (includeAuth && authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
 
 
 // ----------------------------------------------------------
 // PRIVATE: Generic POST handler
 // ----------------------------------------------------------
-async function _post(endpoint, body, includeStatus = false) {
+async function _post(endpoint, body, includeStatus = false, useAuth = false) {
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       method:  'POST',
-      headers: WEB_HEADERS,
+      headers: getHeaders(useAuth),
       body:    JSON.stringify(body),
     });
 
@@ -46,11 +62,11 @@ async function _post(endpoint, body, includeStatus = false) {
 // ----------------------------------------------------------
 // PRIVATE: Generic GET handler
 // ----------------------------------------------------------
-async function _get(endpoint, params = {}) {
+async function _get(endpoint, params = {}, useAuth = false) {
   try {
     const query    = new URLSearchParams(params).toString();
     const url      = `${BASE_URL}${endpoint}${query ? `?${query}` : ''}`;
-    const response = await fetch(url, { headers: WEB_HEADERS });
+    const response = await fetch(url, { headers: getHeaders(useAuth) });
     return await response.json();
   } catch {
     return {
@@ -75,9 +91,14 @@ export async function register({ username, email, password }) {
 /**
  * Log in with email and password.
  * Returns statusCode so UI can detect 403 (unverified) vs 401 (wrong creds).
+ * Stores token for authenticated requests.
  */
 export async function login({ email, password }) {
-  return _post('/login', { email, password }, true);
+  const data = await _post('/login', { email, password }, true);
+  if (data.success && data.token) {
+    setAuthToken(data.token);
+  }
+  return data;
 }
 
 /**
@@ -95,22 +116,111 @@ export async function resendOtp({ email }) {
 }
 
 // =============================================================
-// SERVICE ENDPOINTS
+// SERVICE ENDPOINTS (Note: Services are Queues in backend)
 // =============================================================
 
 /**
- * Create a new service/enterprise.
- * Atomically creates: Service row + Admin row (admin_role='boss').
- * Called at Step 3 of registration — after email is verified.
+ * Create a new service/queue.
+ * Requires admin_id (from logged-in user).
  */
-export async function createService({ email, serviceName }) {
-  return _post('/services', { email, service_name: serviceName });
+export async function createService({ adminId, name, description, category }) {
+  return _post('/services', {
+    admin_id: adminId,
+    name: name,
+    description: description || '',
+    category: category || 'General',
+  }, false, true);
 }
 
 /**
- * Fetch all services owned by a user (by email).
- * Useful later for a service-selector screen.
+ * Get all services (admin can see all).
  */
-export async function getMyServices({ email }) {
-  return _get('/services/mine', { email });
+export async function getAllServices() {
+  return _get('/services', {}, true);
+}
+
+/**
+ * Get a single service by ID.
+ */
+export async function getService(serviceId) {
+  return _get(`/services/${serviceId}`, {}, true);
+}
+
+/**
+ * Update a service.
+ */
+export async function updateService(serviceId, { name, description, category, isActive }) {
+  const body = {};
+  if (name !== undefined) body.name = name;
+  if (description !== undefined) body.description = description;
+  if (category !== undefined) body.category = category;
+  if (isActive !== undefined) body.is_active = isActive;
+
+  try {
+    const response = await fetch(`${BASE_URL}/services/${serviceId}`, {
+      method: 'PATCH',
+      headers: getHeaders(true),
+      body: JSON.stringify(body),
+    });
+    return await response.json();
+  } catch {
+    return {
+      success: false,
+      message: 'Connection error. Please check your network.',
+    };
+  }
+}
+
+/**
+ * Delete a service.
+ */
+export async function deleteService(serviceId) {
+  try {
+    const response = await fetch(`${BASE_URL}/services/${serviceId}`, {
+      method: 'DELETE',
+      headers: getHeaders(true),
+      body: JSON.stringify({}),
+    });
+    return await response.json();
+  } catch {
+    return {
+      success: false,
+      message: 'Connection error. Please check your network.',
+    };
+  }
+}
+
+/**
+ * Get QR code for a service (download as PNG).
+ */
+export async function getServiceQRCode(serviceId) {
+  try {
+    const response = await fetch(`${BASE_URL}/services/${serviceId}/qr.png`, {
+      headers: getHeaders(true),
+    });
+    if (!response.ok) {
+      return { success: false, message: 'Failed to download QR code' };
+    }
+    const blob = await response.blob();
+    return { success: true, blob, contentType: response.headers.get('content-type') };
+  } catch {
+    return {
+      success: false,
+      message: 'Connection error. Please check your network.',
+    };
+  }
+}
+
+/**
+ * Regenerate QR code for a service.
+ */
+export async function regenerateServiceQR(serviceId) {
+  return _post(`/services/${serviceId}/regenerate-qr`, {}, false, true);
+}
+
+/**
+ * Clear auth token (logout).
+ */
+export function clearAuthToken() {
+  authToken = null;
 }
