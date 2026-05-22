@@ -1,8 +1,8 @@
 // =============================================================
 // SESSION SERVICE
 // Responsibilities:
-//   - Persist authenticated user data to sessionStorage
-//   - Restore session on page reload
+//   - Persist authenticated user data to localStorage
+//   - Restore session on page reload (with auto-login like Flutter)
 //   - Clear session on logout
 // OOP Principle: Singleton, Encapsulation, Single Responsibility
 //   (mirrors SessionService singleton in the Flutter app)
@@ -15,8 +15,8 @@ const STORAGE_KEY = 'tickety_user';
 // Called after successful login or service creation (Step 3)
 // ----------------------------------------------------------
 export function saveSession(userData) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
-}// ===
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+}
 
 // ----------------------------------------------------------
 // RESTORE
@@ -24,7 +24,7 @@ export function saveSession(userData) {
 // ----------------------------------------------------------
 export function restoreSession() {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -44,5 +44,5 @@ export function isLoggedIn() {
 // Called on logout
 // ----------------------------------------------------------
 export function clearSession() {
-  sessionStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY);
 }
