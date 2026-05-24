@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AuthLayout  from '../components/AuthLayout';
 import FormField   from '../components/FormField';
 import OtpGrid     from '../components/OtpGrid';
-import { register, verifyEmail, resendOtp } from '../services/api.service';
+import { register, verifyEmail, resendOtp, login } from '../services/api.service';
 import { useAuth } from '../hooks/useAuth';
 import {
   validateUsername, validateEmail,
@@ -14,9 +14,12 @@ import { RESEND_COOLDOWN_SECONDS } from '../utils/constants';
 // =============================================================
 // REGISTRATION PAGE  (Steps 1 and 2)
 // Step 1 → credentials
-// Step 2 → OTP verification  (then redirects to /setup-service)
+// Step 2 → OTP verification → auto-login → redirect to /setup-service
 // OOP Principle: State machine, Encapsulation
-// All HTTP logic delegated to api.service.js
+//
+// Fixed: after OTP verification, we now auto-login to get user_id
+//   and token, which are forwarded to ServiceSetupPage so it can
+//   call createService() with the correct adminId.
 // =============================================================
 export default function RegistrationPage() {
   const navigate = useNavigate();
@@ -59,22 +62,32 @@ export default function RegistrationPage() {
   // ── STEP 2: OTP ─────────────────────────────────────────
   const handleOtpComplete = (code) => {
     submit(async () => {
-      const data = await verifyEmail({
-        email: email.toLowerCase().trim(),
-        code,
-      });
+      const cleanEmail = email.toLowerCase().trim();
 
-      if (data.success) {
-        // Pass email + username to Step 3 page
-        navigate('/setup-service', {
-          state: {
-            email:    email.toLowerCase().trim(),
-            username: username.trim(),
-          },
-        });
-      } else {
-        setError(data.message || 'Invalid code.');
+      // 1. Verify the OTP code
+      const verifyData = await verifyEmail({ email: cleanEmail, code });
+      if (!verifyData.success) {
+        setError(verifyData.message || 'Invalid code.');
+        return;
       }
+
+      // 2. Fixed: auto-login to get user_id + token for Step 3
+      const loginData = await login({ email: cleanEmail, password });
+      if (!loginData.success) {
+        // Verification worked but login failed — send to login page
+        navigate('/login');
+        return;
+      }
+
+      // 3. Forward credentials to ServiceSetupPage
+      navigate('/setup-service', {
+        state: {
+          email:    cleanEmail,
+          username: username.trim(),
+          user_id:  loginData.user_id ?? loginData.id,
+          token:    loginData.token,
+        },
+      });
     });
   };
 
@@ -128,7 +141,7 @@ export default function RegistrationPage() {
       </p>
     </>
   );
-// ===test
+
   return (
     <AuthLayout leftContent={leftContent}>
 

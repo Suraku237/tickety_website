@@ -1,27 +1,40 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import AuthLayout       from '../components/AuthLayout';
-import FormField        from '../components/FormField';
+import AuthLayout        from '../components/AuthLayout';
+import FormField         from '../components/FormField';
 import { createService } from '../services/api.service';
 import { saveSession }   from '../services/session.service';
+import { setAuthToken }  from '../services/api.service';
 import { useAuth }       from '../hooks/useAuth';
 import { validateServiceName } from '../utils/validators';
 import { ROLE_LABELS }   from '../utils/constants';
-// ===test
+
 // =============================================================
 // SERVICE SETUP PAGE  (Step 3 of registration)
 // Responsibilities:
 //   - Accept service/enterprise name from the newly verified admin
-//   - POST to /api/services → creates Service + Admin(boss) rows
+//   - POST to /api/services → creates Service row with QR code
 //   - Save full session and redirect to dashboard
 // OOP Principle: Single Responsibility, Encapsulation
+//
+// Fixed: createService() was called with wrong params (email +
+//   serviceName). It now sends the correct fields (adminId, name).
+//   user_id is passed via router state from RegistrationPage after
+//   the backend login call that follows OTP verification.
 // =============================================================
 export default function ServiceSetupPage() {
   const navigate  = useNavigate();
   const location  = useLocation();
 
   // Passed from RegistrationPage via router state after OTP verified
-  const { email = '', username = '' } = location.state ?? {};
+  // Fixed: now also receives user_id and token so we can call
+  // createService as an authenticated admin.
+  const {
+    email    = '',
+    username = '',
+    user_id  = null,
+    token    = null,
+  } = location.state ?? {};
 
   const { loading, error, setError, submit } = useAuth();
   const [serviceName, setServiceName] = useState('');
@@ -32,21 +45,30 @@ export default function ServiceSetupPage() {
     const err = validateServiceName(serviceName);
     if (err) { setError(err); return; }
 
+    if (!user_id) {
+      setError('Session expired. Please register again.');
+      return;
+    }
+
+    // Restore auth token for this request
+    if (token) setAuthToken(token);
+
     submit(async () => {
       const data = await createService({
-        email,
-        serviceName: serviceName.trim(),
+        adminId:     user_id,          // Fixed: was missing / wrong field name
+        name:        serviceName.trim(), // Fixed: was 'serviceName', should be 'name'
+        description: '',
+        category:    'General',
       });
 
       if (data.success) {
         saveSession({
-          user_id:      data.user_id,
-          username:     data.username,
-          email:        data.email,
-          role:         data.role,
-          admin_role:   data.admin_role,
-          service_id:   data.service_id,
-          service_name: data.service_name,
+          user_id,
+          username,
+          email,
+          role:         'admin',
+          service_id:   data.service?.service_id ?? null,
+          service_name: data.service?.name       ?? serviceName.trim(),
         });
         navigate('/dashboard');
       } else {

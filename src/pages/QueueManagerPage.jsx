@@ -1,35 +1,47 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSession }  from '../hooks/useSession';
-import QrModal         from '../components/QrModal';
+import { useState, useRef, useContext } from 'react';
+import { useNavigate }  from 'react-router-dom';
+import { useSession }   from '../hooks/useSession';
+import { AppContext }   from '../contexts/AppContext';
+import QrModal          from '../components/QrModal';
 import '../styles/dashboard.css';
 import '../styles/queuemanager.css';
 
 // =============================================================
 // QUEUE MANAGER PAGE
 // OOP Principle: Single Responsibility, Encapsulation
-// QR generation logic delegated to QrModal component
-// Session logic delegated to useSession hook
+//
+// Fixed: queues were stored in local useState only — they were
+//   never saved to the backend and disappeared on refresh.
+//   Now uses AppContext (createQueue, updateQueue, deleteQueue,
+//   loadQueues) so all operations go through the backend API.
 // =============================================================
 
 const QUEUE_TYPES = [
-  { id: 'general',   label: 'General',    icon: '📋', color: '#3B82F6' },
-  { id: 'priority',  label: 'Priority',   icon: '⚡', color: '#F59E0B' },
-  { id: 'vip',       label: 'VIP',        icon: '👑', color: '#DC0F0F' },
-  { id: 'medical',   label: 'Medical',    icon: '🏥', color: '#22C55E' },
+  { id: 'general',  label: 'General',  icon: '📋', color: '#3B82F6' },
+  { id: 'priority', label: 'Priority', icon: '⚡', color: '#F59E0B' },
+  { id: 'vip',      label: 'VIP',      icon: '👑', color: '#DC0F0F' },
+  { id: 'medical',  label: 'Medical',  icon: '🏥', color: '#22C55E' },
 ];
 
 export default function QueueManagerPage() {
   const navigate = useNavigate();
   const { user, logout } = useSession();
 
-  // ── Local state ─────────────────────────────────────────────
-  const [queues,      setQueues]      = useState([]);
-  const [showCreate,  setShowCreate]  = useState(false);
-  const [qrTarget,    setQrTarget]    = useState(null);   // queue to show QR for
-  const [formName,    setFormName]    = useState('');
-  const [formType,    setFormType]    = useState('general');
-  const [formError,   setFormError]   = useState('');
+  // Fixed: use AppContext instead of local useState for queues
+  const {
+    queues,
+    loading,
+    error:   contextError,
+    createQueue,
+    updateQueue,
+    deleteQueue,
+  } = useContext(AppContext);
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [qrTarget,   setQrTarget]   = useState(null);
+  const [formName,   setFormName]   = useState('');
+  const [formType,   setFormType]   = useState('general');
+  const [formError,  setFormError]  = useState('');
   const inputRef = useRef(null);
 
   if (!user) return null;
@@ -40,8 +52,9 @@ export default function QueueManagerPage() {
     return (name[0] || '?').toUpperCase();
   };
 
-  // ── Create queue ────────────────────────────────────────────
-  const handleCreate = (e) => {
+  // ── Create queue ─────────────────────────────────────────
+  // Fixed: now calls AppContext.createQueue() → backend API
+  const handleCreate = async (e) => {
     e.preventDefault();
     const name = formName.trim();
     if (!name) { setFormError('Queue name is required.'); return; }
@@ -51,40 +64,41 @@ export default function QueueManagerPage() {
       return;
     }
 
-    const newQueue = {
-      id:          Date.now(),
+    const result = await createQueue({
       name,
-      type:        formType,
-      serviceName: user.service_name || 'My Service',
-      serviceId:   user.service_id   || 'default',
-      active:      true,
-      ticketsToday: 0,
-      createdAt:   new Date().toISOString(),
-    };
+      description: '',
+      category:    formType,
+    });
 
-    setQueues(prev => [newQueue, ...prev]);
-    setFormName('');
-    setFormType('general');
-    setFormError('');
-    setShowCreate(false);
+    if (result?.success) {
+      setFormName('');
+      setFormType('general');
+      setFormError('');
+      setShowCreate(false);
+    } else {
+      setFormError(result?.message || 'Failed to create queue.');
+    }
   };
 
-  // ── Toggle active ────────────────────────────────────────────
-  const toggleQueue = (id) =>
-    setQueues(prev => prev.map(q => q.id === id ? { ...q, active: !q.active } : q));
+  // ── Toggle active/pause ──────────────────────────────────
+  // Fixed: now calls AppContext.updateQueue() → backend API
+  const toggleQueue = async (queue) => {
+    await updateQueue(queue.service_id, { isActive: !queue.is_active });
+  };
 
-  // ── Delete queue ─────────────────────────────────────────────
-  const deleteQueue = (id) =>
-    setQueues(prev => prev.filter(q => q.id !== id));
+  // ── Delete queue ─────────────────────────────────────────
+  // Fixed: now calls AppContext.deleteQueue() → backend API
+  const handleDelete = async (queue) => {
+    await deleteQueue(queue.service_id);
+  };
 
-  // ── Helpers ──────────────────────────────────────────────────
   const typeOf = (id) => QUEUE_TYPES.find(t => t.id === id) || QUEUE_TYPES[0];
 
   return (
     <div className="dash-root">
       <div className="dash-glow-tl" />
 
-      {/* ── SIDEBAR (identical structure to DashboardPage) ── */}
+      {/* ── SIDEBAR ── */}
       <aside className="dash-sidebar">
         <div className="db-brand">
           <span>🎟</span>
@@ -132,14 +146,12 @@ export default function QueueManagerPage() {
         <header className="dash-topbar">
           <div>
             <p className="dash-greeting">Queue Manager</p>
-            <h1 className="dash-username">
-              {user.service_name || 'My Service'}
-            </h1>
+            <h1 className="dash-username">{user.service_name || 'My Service'}</h1>
           </div>
           <div className="dash-topbar-right">
             <div className="dash-status-badge">
               <span className="dash-status-dot" />
-              {queues.filter(q => q.active).length} Active
+              {queues.filter(q => q.is_active).length} Active
             </div>
             <button
               className="qm-btn-new"
@@ -154,6 +166,13 @@ export default function QueueManagerPage() {
             </button>
           </div>
         </header>
+
+        {/* Context-level error banner */}
+        {contextError && (
+          <div className="auth-error" style={{ marginBottom: '16px' }}>
+            <span className="auth-error-icon">⚠</span>{contextError}
+          </div>
+        )}
 
         {/* ── CREATE FORM ── */}
         {showCreate && (
@@ -206,16 +225,23 @@ export default function QueueManagerPage() {
                   onClick={() => { setShowCreate(false); setFormError(''); }}>
                   Cancel
                 </button>
-                <button type="submit" className="auth-submit qm-btn-submit">
-                  CREATE QUEUE
+                <button type="submit" className="auth-submit qm-btn-submit" disabled={loading}>
+                  {loading ? <span className="auth-spinner" /> : 'CREATE QUEUE'}
                 </button>
               </div>
             </form>
           </div>
         )}
 
+        {/* ── LOADING STATE ── */}
+        {loading && queues.length === 0 && (
+          <div className="qm-empty">
+            <span className="auth-spinner" />
+          </div>
+        )}
+
         {/* ── EMPTY STATE ── */}
-        {queues.length === 0 && !showCreate && (
+        {!loading && queues.length === 0 && !showCreate && (
           <div className="qm-empty">
             <div className="qm-empty-icon">📋</div>
             <h2 className="qm-empty-title">No queues yet</h2>
@@ -241,21 +267,18 @@ export default function QueueManagerPage() {
                 <span className="qm-stat-lbl">Total Queues</span>
               </div>
               <div className="qm-stat">
-                <span className="qm-stat-val">{queues.filter(q => q.active).length}</span>
+                <span className="qm-stat-val">{queues.filter(q => q.is_active).length}</span>
                 <span className="qm-stat-lbl">Active</span>
-              </div>
-              <div className="qm-stat">
-                <span className="qm-stat-val">{queues.reduce((a, q) => a + q.ticketsToday, 0)}</span>
-                <span className="qm-stat-lbl">Tickets Today</span>
               </div>
             </div>
 
             <h2 className="dash-section-title">YOUR QUEUES</h2>
             <div className="qm-list">
               {queues.map(queue => {
-                const t = typeOf(queue.type);
+                // Fixed: backend uses 'category' as the type field
+                const t = typeOf(queue.category?.toLowerCase());
                 return (
-                  <div key={queue.id} className={`qm-card ${queue.active ? 'active' : 'paused'}`}>
+                  <div key={queue.service_id} className={`qm-card ${queue.is_active ? 'active' : 'paused'}`}>
                     <div className="qmc-left">
                       <div className="qmc-type-dot" style={{ background: t.color }} />
                       <div className="qmc-info">
@@ -266,18 +289,18 @@ export default function QueueManagerPage() {
                           </span>
                         </div>
                         <p className="qmc-meta">
-                          {queue.active ? '● Active' : '⏸ Paused'} · {queue.ticketsToday} tickets today ·
-                          Created {new Date(queue.createdAt).toLocaleDateString()}
+                          {queue.is_active ? '● Active' : '⏸ Paused'} ·
+                          Created {new Date(queue.created_at).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
 
                     <div className="qmc-actions">
-                      {/* ── GENERATE QR CODE ── */}
+                      {/* QR Code */}
                       <button
                         className="qmc-btn qmc-btn-qr"
                         onClick={() => setQrTarget(queue)}
-                        title="Generate QR Code"
+                        title="Show QR Code"
                       >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
                           stroke="currentColor" strokeWidth="2">
@@ -294,18 +317,20 @@ export default function QueueManagerPage() {
 
                       {/* Toggle active/pause */}
                       <button
-                        className={`qmc-btn ${queue.active ? 'qmc-btn-pause' : 'qmc-btn-resume'}`}
-                        onClick={() => toggleQueue(queue.id)}
-                        title={queue.active ? 'Pause queue' : 'Resume queue'}
+                        className={`qmc-btn ${queue.is_active ? 'qmc-btn-pause' : 'qmc-btn-resume'}`}
+                        onClick={() => toggleQueue(queue)}
+                        title={queue.is_active ? 'Pause queue' : 'Resume queue'}
+                        disabled={loading}
                       >
-                        {queue.active ? '⏸ Pause' : '▶ Resume'}
+                        {queue.is_active ? '⏸ Pause' : '▶ Resume'}
                       </button>
 
                       {/* Delete */}
                       <button
                         className="qmc-btn qmc-btn-delete"
-                        onClick={() => deleteQueue(queue.id)}
+                        onClick={() => handleDelete(queue)}
                         title="Delete queue"
+                        disabled={loading}
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                           stroke="currentColor" strokeWidth="2">

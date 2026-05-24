@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import '../styles/queueManager.css';
+import '../styles/queuemanager.css'; // Fixed: was 'queueManager.css' (capital M) — fails on Linux
 
 // =============================================================
 // QR MODAL COMPONENT
@@ -20,12 +20,13 @@ import '../styles/queueManager.css';
 // We use the qrcode-generator approach via dynamic script injection.
 
 function buildPayload(queue) {
+  // Fixed: use backend field names (service_id, service_token, name)
+  // instead of the old local-state shape (serviceId, id, serviceName)
   const params = new URLSearchParams({
-    service_id:   String(queue.serviceId   ?? ''),
-    queue_id:     String(queue.id          ?? ''),
-    service:      queue.serviceName        ?? '',
-    queue:        queue.name               ?? '',
-    type:         queue.type               ?? 'general',
+    service_id:    String(queue.service_id    ?? queue.serviceId ?? ''),
+    service_token: String(queue.service_token ?? ''),
+    service:       queue.name                 ?? '',
+    type:          queue.category             ?? queue.type ?? 'general',
   });
   return `tickety://join?${params.toString()}`;
 }
@@ -130,7 +131,8 @@ export default function QrModal({ queue, onClose }) {
           <div className="qrm-header-left">
             <p className="qrm-badge">QR CODE</p>
             <h2 className="qrm-title">{queue.name}</h2>
-            <p className="qrm-service">🏢 {queue.serviceName}</p>
+            {/* Fixed: backend has no serviceName field, use name only */}
+            <p className="qrm-service">🏢 {queue.name}</p>
           </div>
           <button className="qrm-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
@@ -172,18 +174,20 @@ export default function QrModal({ queue, onClose }) {
         <div className="qrm-chips">
           <div className="qrm-chip">
             <span className="qrm-chip-dot" style={{
-              background: queue.type === 'vip' ? '#DC0F0F'
-                        : queue.type === 'priority' ? '#F59E0B'
-                        : queue.type === 'medical'  ? '#22C55E'
+              background: queue.category === 'vip'      ? '#DC0F0F'
+                        : queue.category === 'priority' ? '#F59E0B'
+                        : queue.category === 'medical'  ? '#22C55E'
                         : '#3B82F6'
             }} />
-            {queue.type?.toUpperCase()} QUEUE
+            {/* Fixed: backend uses 'category', not 'type' */}
+            {(queue.category ?? 'GENERAL').toUpperCase()} QUEUE
           </div>
           <div className="qrm-chip">
-            {queue.active ? '● Active' : '⏸ Paused'}
+            {/* Fixed: backend uses 'is_active', not 'active' */}
+            {queue.is_active ? '● Active' : '⏸ Paused'}
           </div>
           <div className="qrm-chip">
-            ID: {String(queue.id).slice(-6)}
+            ID: {String(queue.service_id ?? queue.id ?? '').slice(-6)}
           </div>
         </div>
 
