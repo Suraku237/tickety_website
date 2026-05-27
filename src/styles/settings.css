@@ -58,3 +58,134 @@
 .sp-theme-confirm-dot {
   width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
 }
+
+
+
+
+/* ============================================================
+   SCHEDULE SECTION — append to settings.css
+   ============================================================ */
+
+.sp-error-banner {
+  background: rgba(220,15,15,.1); border: 1px solid rgba(220,15,15,.3);
+  color: var(--crimson); padding: 11px 16px; border-radius: 9px;
+  font-size: 13px; font-weight: 600;
+}
+
+/* Schedule card (general) */
+.sch-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.sch-card-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;
+}
+.sch-card-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.sch-card-sub   { font-size: 12px; color: var(--muted); }
+
+/* Toggle */
+.sch-toggle { flex-shrink: 0; }
+.sch-toggle-label {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+}
+.sch-toggle-label input { display: none; }
+.sch-toggle-track {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: var(--border); position: relative; transition: background .2s;
+  flex-shrink: 0;
+}
+.sch-toggle-label input:checked + .sch-toggle-track {
+  background: var(--crimson);
+}
+.sch-toggle-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; transition: left .2s;
+}
+.sch-toggle-label input:checked + .sch-toggle-track::after { left: 21px; }
+.sch-toggle-text { font-size: 13px; color: var(--muted); font-weight: 600; }
+
+/* Fields row */
+.sch-fields {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+.sch-fields--compact { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sch-field { display: flex; flex-direction: column; gap: 6px; }
+.sch-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--muted); }
+.sch-input {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); font-family: 'DM Sans', sans-serif;
+  font-size: 13px; padding: 9px 12px; border-radius: 9px; outline: none; width: 100%;
+}
+.sch-input:focus { border-color: rgba(220,15,15,.5); }
+
+/* Day overrides grid */
+.sch-section-title {
+  font-size: 13px; font-weight: 700; color: var(--text); margin-top: 4px;
+}
+.sch-section-sub { font-size: 12px; color: var(--muted); margin-top: -8px; }
+
+.sch-days-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+}
+
+.sch-day-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: border-color .2s;
+}
+.sch-day-card.overridden { border-color: rgba(220,15,15,.25); }
+.sch-day-card.editing    { border-color: var(--crimson); background: var(--crimson-dim); }
+
+.sch-day-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sch-day-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.sch-day-badges { display: flex; gap: 6px; }
+.sch-day-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .5px;
+  padding: 3px 9px; border-radius: 20px;
+}
+.sch-day-badge.open    { background: rgba(34,197,94,.12); color: #22C55E; }
+.sch-day-badge.closed  { background: rgba(220,15,15,.12); color: var(--crimson); }
+.sch-day-badge.default { background: var(--card2); color: var(--muted); border: 1px solid var(--border); }
+
+.sch-day-btns    { display: flex; gap: 8px; }
+.sch-day-actions { display: flex; gap: 8px; }
+
+.sch-btn-edit {
+  flex: 1; background: var(--card2); border: 1px solid var(--border);
+  color: var(--muted); padding: 7px 12px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all .2s;
+}
+.sch-btn-edit:hover { border-color: var(--crimson); color: var(--crimson); }
+
+.sch-btn-delete {
+  background: none; border: 1px solid rgba(220,15,15,.25);
+  color: var(--crimson); padding: 7px 12px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all .2s;
+}
+.sch-btn-delete:hover { background: rgba(220,15,15,.1); }
+
+.sch-btn-save {
+  flex: 1; background: var(--crimson); color: #fff; border: none;
+  padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 700;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.sch-btn-save:hover { opacity: .85; }
+
+.sch-btn-cancel {
+  flex: 1; background: none; border: 1px solid var(--border);
+  color: var(--muted); padding: 8px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.sch-day-edit { display: flex; flex-direction: column; gap: 10px; }
+
+@media (max-width: 600px) {
+  .sch-days-grid { grid-template-columns: 1fr; }
+  .sch-fields    { grid-template-columns: 1fr; }
+}

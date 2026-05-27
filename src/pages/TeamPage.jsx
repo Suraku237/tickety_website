@@ -1,23 +1,14 @@
-import { useState } from 'react';
-import DashLayout from '../components/DashboardLayout';
+import { useState, useEffect, useCallback } from 'react';
+import DashLayout    from '../components/DashboardLayout';
+import { useSession } from '../hooks/useSession';
+import {
+  getTeam, removeAdmin, generateInvite,
+} from '../services/api.service';
 import '../styles/team.css';
 
 // =============================================================
-// TEAM PAGE
-// Features:
-//   - View all admins and their roles
-//   - Generate invite link with a pre-set default role
-//   - Delete an admin (except boss)
-// OOP Principle: Encapsulation, Single Responsibility
+// TEAM PAGE — dynamic
 // =============================================================
-
-const MOCK_TEAM = [
-  { id: 'U1', name: 'Jean-Marc Dupont', email: 'jm@clinic.cm', role: 'boss',    joinedAt: '2025-01-10', initials: 'JD' },
-  { id: 'U2', name: 'Carine Tchamba',   email: 'ct@clinic.cm', role: 'manager', joinedAt: '2025-02-14', initials: 'CT' },
-  { id: 'U3', name: 'Paul Essomba',     email: 'pe@clinic.cm', role: 'agent',   joinedAt: '2025-03-02', initials: 'PE' },
-  { id: 'U4', name: 'Alice Mbida',      email: 'am@clinic.cm', role: 'agent',   joinedAt: '2025-03-18', initials: 'AM' },
-  { id: 'U5', name: 'Boris Nkeng',      email: 'bn@clinic.cm', role: 'manager', joinedAt: '2025-04-01', initials: 'BN' },
-];
 
 const ROLE_META = {
   boss:    { label: 'Owner',   icon: '👑', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
@@ -26,27 +17,95 @@ const ROLE_META = {
 };
 
 export default function TeamPage() {
-  const [team,         setTeam]         = useState(MOCK_TEAM);
+  const { user } = useSession();
+
+  const [team,         setTeam]         = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState('');
+  const [filterRole,   setFilterRole]   = useState('all');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting,     setDeleting]     = useState(false);
+
+  // Invite state
   const [showInvite,   setShowInvite]   = useState(false);
   const [inviteRole,   setInviteRole]   = useState('agent');
   const [inviteLink,   setInviteLink]   = useState('');
+  const [inviteLoading,setInviteLoading]= useState(false);
   const [copied,       setCopied]       = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [filterRole,   setFilterRole]   = useState('all');
 
-  const visible = team.filter(m => filterRole === 'all' || m.role === filterRole);
-  const counts  = { boss: team.filter(m => m.role==='boss').length, manager: team.filter(m => m.role==='manager').length, agent: team.filter(m => m.role==='agent').length };
+  // ── LOAD TEAM ───────────────────────────────────────────
+  const load = useCallback(async () => {
+    if (!user?.service_id) return;
+    setLoading(true); setError('');
+    const data = await getTeam({ serviceId: user.service_id });
+    if (data.success) {
+      setTeam(data.team || []);
+    } else {
+      setError(data.message || 'Failed to load team.');
+    }
+    setLoading(false);
+  }, [user?.service_id]);
 
-  const handleGenerateLink = () => {
-    const token = Math.random().toString(36).slice(2, 10).toUpperCase();
-    setInviteLink(`https://tickety.app/invite/${token}?role=${inviteRole}`);
+  useEffect(() => { load(); }, [load]);
+
+  // ── REMOVE ADMIN ────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const data = await removeAdmin({ adminId: deleteTarget.admin_id });
+    if (data.success) {
+      setTeam(prev => prev.filter(m => m.admin_id !== deleteTarget.admin_id));
+      setDeleteTarget(null);
+    } else {
+      setError(data.message || 'Failed to remove admin.');
+    }
+    setDeleting(false);
   };
-  const handleCopy = () => { navigator.clipboard.writeText(inviteLink).catch(()=>{}); setCopied(true); setTimeout(()=>setCopied(false),2000); };
-  const handleDelete = id => { setTeam(p => p.filter(m => m.id !== id)); setDeleteTarget(null); };
+
+  // ── GENERATE INVITE ─────────────────────────────────────
+  const handleGenerateInvite = async () => {
+    setInviteLoading(true); setInviteLink(''); setError('');
+    const data = await generateInvite({
+      serviceId: user.service_id,
+      adminRole: inviteRole,
+    });
+    if (data.success) {
+      setInviteLink(data.invite_url || data.invite?.invite_url || '');
+    } else {
+      setError(data.message || 'Failed to generate invite.');
+    }
+    setInviteLoading(false);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(inviteLink).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const visible = team.filter(m => filterRole === 'all' || m.admin_role === filterRole);
+  const counts  = {
+    boss:    team.filter(m => m.admin_role === 'boss').length,
+    manager: team.filter(m => m.admin_role === 'manager').length,
+    agent:   team.filter(m => m.admin_role === 'agent').length,
+  };
+
+  const getInitials = (name = '') => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return (name[0] || '?').toUpperCase();
+  };
 
   return (
     <DashLayout title="Team" subtitle="MANAGE">
 
+      {error && (
+        <div className="tp-error-banner" onClick={() => setError('')}>
+          ⚠ {error}
+        </div>
+      )}
+
+      {/* STATS */}
       <div className="tp-stats">
         {[
           { label: 'Total',    val: team.length,    col: '#3B82F6' },
@@ -55,78 +114,126 @@ export default function TeamPage() {
           { label: 'Agents',   val: counts.agent,   col: '#22C55E' },
         ].map(s => (
           <div key={s.label} className="tp-stat">
-            <span className="tp-stat-val" style={{ color: s.col }}>{s.val}</span>
+            <span className="tp-stat-val" style={{ color: s.col }}>
+              {loading ? '…' : s.val}
+            </span>
             <span className="tp-stat-label">{s.label}</span>
           </div>
         ))}
       </div>
 
+      {/* TOOLBAR */}
       <div className="tp-toolbar">
         <div className="tp-filters">
           {['all','boss','manager','agent'].map(r => (
-            <button key={r} className={`tp-filter-btn ${filterRole===r?'active':''}`}
+            <button key={r}
+              className={`tp-filter-btn ${filterRole === r ? 'active' : ''}`}
               onClick={() => setFilterRole(r)}>
-              {r==='all' ? 'All' : ROLE_META[r].label+'s'}
+              {r === 'all' ? 'All' : ROLE_META[r].label + 's'}
             </button>
           ))}
         </div>
-        <button className="tp-invite-btn" onClick={() => setShowInvite(true)}>+ Generate invite link</button>
+        {user?.admin_role === 'boss' && (
+          <button className="tp-invite-btn" onClick={() => { setShowInvite(true); setInviteLink(''); }}>
+            + Generate invite link
+          </button>
+        )}
       </div>
 
-      <div className="tp-table-wrap">
-        <table className="tp-table">
-          <thead><tr><th>Member</th><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
-          <tbody>
-            {visible.map(m => {
-              const rm = ROLE_META[m.role];
-              return (
-                <tr key={m.id} className="tp-tr">
-                  <td>
-                    <div className="tp-member-cell">
-                      <div className="tp-avatar" style={{ background: rm.bg, color: rm.color }}>{m.initials}</div>
-                      <span className="tp-member-name">{m.name}</span>
-                    </div>
-                  </td>
-                  <td className="tp-td-muted">{m.email}</td>
-                  <td><span className="tp-role-badge" style={{ color: rm.color, background: rm.bg }}>{rm.icon} {rm.label}</span></td>
-                  <td className="tp-td-muted">{m.joinedAt}</td>
-                  <td>{m.role !== 'boss' && <button className="tp-delete-btn" onClick={() => setDeleteTarget(m)}>🗑</button>}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {/* TEAM TABLE */}
+      {loading ? (
+        <div className="tp-loading">Loading team…</div>
+      ) : (
+        <div className="tp-table-wrap">
+          <table className="tp-table">
+            <thead>
+              <tr>
+                <th>Member</th><th>Email</th><th>Role</th><th>Joined</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.length === 0 ? (
+                <tr><td colSpan={5} className="tp-empty">
+                  {team.length === 0 ? 'No team members yet.' : 'No members match this filter.'}
+                </td></tr>
+              ) : visible.map(m => {
+                const rm = ROLE_META[m.admin_role] || ROLE_META.agent;
+                return (
+                  <tr key={m.admin_id} className="tp-tr">
+                    <td>
+                      <div className="tp-member-cell">
+                        <div className="tp-avatar" style={{ background: rm.bg, color: rm.color }}>
+                          {getInitials(m.username)}
+                        </div>
+                        <span className="tp-member-name">{m.username}</span>
+                      </div>
+                    </td>
+                    <td className="tp-td-muted">{m.email}</td>
+                    <td>
+                      <span className="tp-role-badge" style={{ color: rm.color, background: rm.bg }}>
+                        {rm.icon} {rm.label}
+                      </span>
+                    </td>
+                    <td className="tp-td-muted">
+                      {m.joined_at ? new Date(m.joined_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td>
+                      {m.admin_role !== 'boss' && user?.admin_role === 'boss' && (
+                        <button className="tp-delete-btn"
+                          onClick={() => setDeleteTarget(m)}>🗑</button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* INVITE MODAL */}
       {showInvite && (
         <div className="tp-overlay" onClick={() => { setShowInvite(false); setInviteLink(''); }}>
           <div className="tp-modal" onClick={e => e.stopPropagation()}>
-            <button className="tp-modal-close" onClick={() => { setShowInvite(false); setInviteLink(''); }}>✕</button>
+            <button className="tp-modal-close"
+              onClick={() => { setShowInvite(false); setInviteLink(''); }}>✕</button>
             <p className="tp-modal-label">GENERATE INVITE LINK</p>
             <h2 className="tp-modal-title">Invite a team member</h2>
-            <p className="tp-modal-sub">The person who registers via this link will automatically get the selected role.</p>
+            <p className="tp-modal-sub">
+              The person who registers via this link will automatically get the selected role.
+              Link expires in 48 hours and is single-use.
+            </p>
             <p className="tp-modal-label" style={{ marginTop: 8 }}>DEFAULT ROLE</p>
             <div className="tp-role-picker">
               {['manager','agent'].map(r => {
                 const rm = ROLE_META[r];
                 return (
-                  <div key={r} className={`tp-role-option ${inviteRole===r?'active':''}`} onClick={() => setInviteRole(r)}>
+                  <div key={r}
+                    className={`tp-role-option ${inviteRole === r ? 'active' : ''}`}
+                    onClick={() => setInviteRole(r)}>
                     <span className="tp-role-option-icon">{rm.icon}</span>
                     <div>
                       <p className="tp-role-option-title">{rm.label}</p>
-                      <p className="tp-role-option-sub">{r==='manager' ? 'Can manage queues and tickets' : 'Can operate a counter'}</p>
+                      <p className="tp-role-option-sub">
+                        {r === 'manager' ? 'Can manage queues and tickets' : 'Can operate a counter'}
+                      </p>
                     </div>
-                    {inviteRole===r && <span className="tp-role-check">✓</span>}
+                    {inviteRole === r && <span className="tp-role-check">✓</span>}
                   </div>
                 );
               })}
             </div>
-            <button className="tp-invite-generate-btn" onClick={handleGenerateLink}>Generate Link</button>
+            <button className="tp-invite-generate-btn"
+              disabled={inviteLoading}
+              onClick={handleGenerateInvite}>
+              {inviteLoading ? 'Generating…' : 'Generate Link'}
+            </button>
             {inviteLink && (
               <div className="tp-link-box">
                 <p className="tp-link-text">{inviteLink}</p>
-                <button className="tp-copy-btn" onClick={handleCopy}>{copied ? '✓ Copied' : 'Copy'}</button>
+                <button className="tp-copy-btn" onClick={handleCopy}>
+                  {copied ? '✓ Copied' : 'Copy'}
+                </button>
               </div>
             )}
           </div>
@@ -138,11 +245,15 @@ export default function TeamPage() {
         <div className="tp-overlay" onClick={() => setDeleteTarget(null)}>
           <div className="tp-modal tp-modal--sm" onClick={e => e.stopPropagation()}>
             <p className="tp-modal-icon">🗑</p>
-            <h2 className="tp-modal-title">Remove {deleteTarget.name}?</h2>
-            <p className="tp-modal-sub">This will revoke their access. They won't be able to log in as admin.</p>
+            <h2 className="tp-modal-title">Remove {deleteTarget.username}?</h2>
+            <p className="tp-modal-sub">
+              This will revoke their access to the service.
+            </p>
             <div className="tp-modal-actions">
               <button className="tp-btn-ghost" onClick={() => setDeleteTarget(null)}>Cancel</button>
-              <button className="tp-btn-danger" onClick={() => handleDelete(deleteTarget.id)}>Remove</button>
+              <button className="tp-btn-danger" disabled={deleting} onClick={handleDelete}>
+                {deleting ? 'Removing…' : 'Remove'}
+              </button>
             </div>
           </div>
         </div>

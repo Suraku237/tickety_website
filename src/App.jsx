@@ -11,6 +11,7 @@ import AnalyticsPage    from './pages/AnalyticsPage';
 import SettingsPage     from './pages/SettingsPage';
 import NotFoundPage     from './pages/NotFoundPage';
 import ProtectedRoute   from './components/ProtectedRoute';
+import './styles/dynamic_additions.css';
 
 // =============================================================
 // APP  — Route definitions
