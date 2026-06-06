@@ -1,6 +1,6 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 import { restoreSession } from '../services/session.service';
-import { getQueues, createQueue as apiCreateQueue, deleteQueue as apiDeleteQueue } from '../services/api.service';
+import { getQueues, createQueue as apiCreateQueue, deleteQueue as apiDeleteQueue, getTickets } from '../services/api.service';
 
 // =============================================================
 // APP CONTEXT
@@ -14,6 +14,7 @@ export const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [queues,  setQueues]  = useState([]);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
@@ -38,7 +39,20 @@ export function AppProvider({ children }) {
     }
   }, [user?.service_id]);
 
-  useEffect(() => { loadQueues(); }, [loadQueues]);
+  // ── Load tickets from backend ─────────────────────────────
+  const loadTickets = useCallback(async () => {
+    if (!user?.service_id) return;
+    try {
+      const data = await getTickets({ serviceId: user.service_id });
+      if (data.success) {
+        setTickets(data.tickets ?? []);
+      }
+    } catch {
+      // silently fail — tickets are non-critical on load
+    }
+  }, [user?.service_id]);
+
+  useEffect(() => { loadQueues(); loadTickets(); }, [loadQueues, loadTickets]);
 
   // ── Create queue ─────────────────────────────────────────
   const createQueue = async ({ name, category }) => {
@@ -91,7 +105,7 @@ export function AppProvider({ children }) {
   };
 
   return (
-    <AppContext.Provider value={{ queues, loading, error, createQueue, deleteQueue, loadQueues }}>
+    <AppContext.Provider value={{ queues, tickets, loading, error, createQueue, deleteQueue, loadQueues, loadTickets }}>
       {children}
     </AppContext.Provider>
   );

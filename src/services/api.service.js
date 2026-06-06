@@ -116,6 +116,17 @@ export async function getMyServices({ email }) {
 }
 
 // =============================================================
+// TICKET ENDPOINTS
+// =============================================================
+
+/**
+ * Fetch all tickets for a service (admin view).
+ */
+export async function getTickets({ serviceId }) {
+  return _get('/tickets', { service_id: serviceId });
+}
+
+// =============================================================
 // QUEUE ENDPOINTS
 // =============================================================
 

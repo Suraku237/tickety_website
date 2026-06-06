@@ -187,3 +187,65 @@ body { background: var(--surface); color: var(--text); font-family: 'DM Sans', s
   .dash-modules { grid-template-columns: 1fr; }
   .dash-welcome-banner { flex-direction: column; gap: 20px; }
 }
+/* ── Recent Tickets List ── */
+.dash-ticket-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.dash-ticket-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--db-card);
+  border: 1px solid var(--db-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.dtr-left  { display: flex; align-items: center; gap: 12px; }
+.dtr-right { display: flex; align-items: center; gap: 12px; }
+
+.dtr-num {
+  font-size: 13px;
+  font-weight: 800;
+  color: #DC0F0F;
+  background: #DC0F0F18;
+  border-radius: 8px;
+  padding: 4px 10px;
+  letter-spacing: 1px;
+}
+
+.dtr-info { display: flex; flex-direction: column; gap: 2px; }
+.dtr-name  { font-size: 13px; font-weight: 600; color: var(--db-text); }
+.dtr-queue { font-size: 11px; color: var(--db-muted); }
+
+.dtr-status {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.dtr-time { font-size: 11px; color: var(--db-muted); }
+
+/* ── Empty state ── */
+.dash-empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 24px;
+  background: var(--db-card);
+  border: 1px solid var(--db-border);
+  border-radius: 16px;
+  text-align: center;
+  color: var(--db-muted);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.dash-empty-block span { font-size: 32px; }

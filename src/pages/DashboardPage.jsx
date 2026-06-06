@@ -1,17 +1,13 @@
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSession }  from '../hooks/useSession';
-import { AppContext }  from '../contexts/AppContext';
+import { useSession } from '../hooks/useSession';
+import { AppContext } from '../contexts/AppContext';
 import '../styles/dashboard.css';
 
-// =============================================================
-// DASHBOARD PAGE
-// OOP Principle: Single Responsibility, Encapsulation
-// =============================================================
 export default function DashboardPage() {
   const { user, logout } = useSession();
-  const navigate         = useNavigate();
-  const { queues }       = useContext(AppContext);
+  const navigate = useNavigate();
+  const { queues, tickets } = useContext(AppContext);
 
   if (!user) return null;
 
@@ -28,23 +24,39 @@ export default function DashboardPage() {
     return 'Good evening';
   };
 
-  const activeQueues = queues.length;
+  // Real stats from live data
+  const today = new Date().toDateString();
+  const ticketsToday  = tickets.filter(t => new Date(t.created_at).toDateString() === today);
+  const activeTickets = tickets.filter(t => t.status === 'active');
+  const activeQueues  = queues.length;
+
+  // Average wait — use estimated_minutes if available
+  const withWait = tickets.filter(t => t.estimated_minutes > 0);
+  const avgWait  = withWait.length
+    ? Math.round(withWait.reduce((s, t) => s + t.estimated_minutes, 0) / withWait.length)
+    : null;
 
   const stats = [
-    { label: 'Active Queues',  value: String(activeQueues), icon: '📋', color: '#DC0F0F' },
-    { label: 'Tickets Today',  value: '0',                  icon: '🎟',  color: '#3B82F6' },
-    { label: 'Team Members',   value: '1',                  icon: '👥',  color: '#22C55E' },
-    { label: 'Avg. Wait Time', value: '—',                  icon: '⏱',  color: '#F59E0B' },
+    { label: 'Active Queues',  value: activeQueues,                      icon: '📋', color: '#DC0F0F' },
+    { label: 'Tickets Today',  value: ticketsToday.length,               icon: '🎟',  color: '#3B82F6' },
+    { label: 'Active Tickets', value: activeTickets.length,              icon: '✅',  color: '#22C55E' },
+    { label: 'Avg. Wait Time', value: avgWait ? `${avgWait}m` : '—',    icon: '⏱',  color: '#F59E0B' },
   ];
 
-  const modules = [
-    { icon: '📋', title: 'Queue Manager',  desc: 'Create and manage service queues',   path: '/queues' },
-    { icon: '🎟', title: 'Tickets',         desc: 'Monitor and call active tickets',    path: null },
-    { icon: '👥', title: 'Team',            desc: 'Invite managers and agents',         path: null },
-    { icon: '🖥', title: 'Counter Display', desc: 'Live board for counter screens',     path: null },
-    { icon: '📊', title: 'Analytics',       desc: 'Queue performance & reports',        path: null },
-    { icon: '⚙️', title: 'Settings',        desc: 'Service config & preferences',       path: null },
-  ];
+  // Recent tickets — last 10, sorted newest first
+  const recentTickets = [...tickets]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 10);
+
+  // Services that have at least one ticket
+  const servicesWithTickets = [...new Map(
+    tickets.map(t => [t.service_name || t.service_id, t])
+  ).values()];
+
+  const statusColor = (s) =>
+    s === 'active'    ? '#22C55E'
+    : s === 'suspended' ? '#F59E0B'
+    : '#DC0F0F';
 
   return (
     <div className="dash-root">
@@ -107,23 +119,7 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="dash-welcome-banner">
-          <div className="dwb-left">
-            <p className="dwb-tag">✅ ACCOUNT VERIFIED</p>
-            <h2 className="dwb-title">
-              {user.service_name
-                ? `${user.service_name} is ready.`
-                : 'Your admin account is active.'}
-            </h2>
-            <p className="dwb-sub">
-              You're set up as <strong>Owner / Boss</strong>.
-              Head to <strong>Queue Manager</strong> to create queues and generate QR codes
-              for your customers.
-            </p>
-          </div>
-          <div className="dwb-icon">🚀</div>
-        </div>
-
+        {/* Stats */}
         <div className="dash-stats">
           {stats.map(s => (
             <div key={s.label} className="stat-card">
@@ -136,24 +132,57 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <h2 className="dash-section-title">MODULES</h2>
-        <div className="dash-modules">
-          {modules.map(m => (
-            <div
-              key={m.title}
-              className={`module-card ${m.path ? 'clickable' : ''}`}
-              onClick={() => m.path && navigate(m.path)}
-              style={{ cursor: m.path ? 'pointer' : 'default' }}
-            >
-              <div className="mc-top">
-                <span className="mc-icon">{m.icon}</span>
-                {!m.path && <span className="mc-tag">SOON</span>}
+        {/* Recent Tickets */}
+        <h2 className="dash-section-title">RECENT TICKETS</h2>
+        {recentTickets.length === 0 ? (
+          <div className="dash-empty-block">
+            <span>🎟</span>
+            <p>No tickets yet. Customers will appear here once they join a queue.</p>
+          </div>
+        ) : (
+          <div className="dash-ticket-list">
+            {recentTickets.map((t, i) => (
+              <div key={t.id ?? i} className="dash-ticket-row">
+                <div className="dtr-left">
+                  <span className="dtr-num">{t.ticket_number ?? `#${i + 1}`}</span>
+                  <div className="dtr-info">
+                    <span className="dtr-name">{t.customer_identifier ?? t.customer ?? '—'}</span>
+                    <span className="dtr-queue">{t.queue_name ?? t.service_name ?? '—'}</span>
+                  </div>
+                </div>
+                <div className="dtr-right">
+                  <span className="dtr-status" style={{ color: statusColor(t.status), background: statusColor(t.status) + '18' }}>
+                    {(t.status ?? 'active').toUpperCase()}
+                  </span>
+                  <span className="dtr-time">
+                    {t.created_at ? new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  </span>
+                </div>
               </div>
-              <p className="mc-title">{m.title}</p>
-              <p className="mc-desc">{m.desc}</p>
+            ))}
+          </div>
+        )}
+
+        {/* Services with tickets */}
+        {servicesWithTickets.length > 0 && (
+          <>
+            <h2 className="dash-section-title" style={{ marginTop: '32px' }}>ACTIVE SERVICES</h2>
+            <div className="dash-modules">
+              {servicesWithTickets.map((t, i) => (
+                <div key={i} className="module-card">
+                  <div className="mc-top">
+                    <span className="mc-icon">🏢</span>
+                    <span className="mc-tag" style={{ background: '#22C55E18', color: '#22C55E' }}>LIVE</span>
+                  </div>
+                  <p className="mc-title">{t.service_name ?? `Service ${t.service_id}`}</p>
+                  <p className="mc-desc">
+                    {tickets.filter(tk => (tk.service_name || tk.service_id) === (t.service_name || t.service_id)).length} ticket(s) issued
+                  </p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </>
+        )}
 
         <p className="dash-footer">TICKETY v1.0.0 — Smart Queue Management System</p>
       </main>

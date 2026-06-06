@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AuthLayout     from '../components/AuthLayout';
 import FormField      from '../components/FormField';
-import { login }      from '../services/api.service';
+import { login, getMyServices } from '../services/api.service';
 import { saveSession } from '../services/session.service';
 import { useAuth }    from '../hooks/useAuth';
 import { validateEmail, validatePassword, validate } from '../utils/validators';
@@ -35,7 +35,14 @@ export default function LoginPage() {
       });
 
       if (data.success) {
-        saveSession(data);
+        // Fetch the user's service to get service_id
+        const svcData = await getMyServices({ email: email.toLowerCase().trim() });
+        const service = svcData.services?.[0] ?? {};
+        saveSession({
+          ...data,
+          service_id:   service.service_id   ?? data.service_id,
+          service_name: service.service_name ?? data.service_name,
+        });
         navigate('/dashboard');
       } else if (data.statusCode === 403 && data.message?.includes('verify')) {
         navigate('/verify', { state: { email: email.toLowerCase().trim() } });
