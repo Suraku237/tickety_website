@@ -370,3 +370,30 @@
   .qp-root { flex-direction: column; height: auto; }
   .qp-sidebar { width: 100%; }
 }
+
+/* ============================================================
+   QUEUES PAGE — additions for printed badge + issue button
+   Append to queues.css
+   ============================================================ */
+
+/* Printed ticket badge (shown next to ticket code) */
+.qp-printed-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 9px; font-weight: 700; letter-spacing: .5px;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.3);
+  color: #F59E0B;
+  padding: 2px 7px; border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Issue ticket button on queue card */
+.qp-card-btn--issue {
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.3);
+  color: #F59E0B;
+}
+.qp-card-btn--issue:hover {
+  background: rgba(245,158,11,0.2);
+  border-color: rgba(245,158,11,0.5);
+}

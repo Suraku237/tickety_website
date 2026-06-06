@@ -11,7 +11,19 @@ import { validateEmail, validatePassword, validate } from '../utils/validators';
 // LOGIN PAGE
 // OOP Principle: Encapsulation, Single Responsibility
 // All HTTP logic delegated to api.service.js
+//
+// ROLE-BASED REDIRECT:
+//   boss    → /dashboard
+//   manager → /queues
+//   agent   → /counter
 // =============================================================
+
+const ROLE_HOME = {
+  boss:    '/dashboard',
+  manager: '/queues',
+  agent:   '/counter',
+};
+
 export default function LoginPage() {
   const navigate = useNavigate();
   const { loading, error, setError, submit } = useAuth();
@@ -36,7 +48,8 @@ export default function LoginPage() {
 
       if (data.success) {
         saveSession(data);
-        navigate('/dashboard');
+        const home = ROLE_HOME[data.admin_role] ?? '/dashboard';
+        navigate(home);
       } else if (data.statusCode === 403 && data.message?.includes('verify')) {
         navigate('/verify', { state: { email: email.toLowerCase().trim() } });
       } else {

@@ -30,7 +30,6 @@ async function _post(endpoint, body, includeStatus = false) {
 
 async function _get(endpoint, params = {}) {
   try {
-    // Filter out null/undefined params
     const clean    = Object.fromEntries(
       Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== '')
     );
@@ -121,29 +120,14 @@ export const swapTickets = ({ ticketIdA, ticketIdB }) =>
 
 // =============================================================
 // COUNTER
-// Updated: getCounterTickets accepts queueIds + counterName
-//          terminateTicket passes counterName to stamp on ticket
-//          callNext passes queueIds + counterName
 // =============================================================
-
-/**
- * Get all tickets for the counter view.
- * @param serviceId  - the service being managed
- * @param queueIds   - comma-separated queue ids the agent is serving
- *                     (empty = all queues, for manager overview)
- * @param counterName - display only, returned in response
- */
 export const getCounterTickets = ({ serviceId, queueIds = '', counterName = '' }) =>
   _get('/counter/tickets', {
     service_id:   serviceId,
-    queue_ids:    queueIds,    // e.g. "1,2,3"
+    queue_ids:    queueIds,
     counter_name: counterName,
   });
 
-/**
- * Terminate (mark as served) a ticket.
- * counterName is stamped on the next promoted ticket.
- */
 export const terminateTicket = ({ ticketId, counterName = '' }) =>
   _patch(`/counter/tickets/${ticketId}/terminate`, { counter_name: counterName });
 
@@ -153,16 +137,10 @@ export const suspendTicket = ({ ticketId }) =>
 export const reactivateTicket = ({ ticketId }) =>
   _patch(`/counter/tickets/${ticketId}/reactivate`);
 
-/**
- * Call the next ticket from the selected queues.
- * @param serviceId   - the service
- * @param queueIds    - array of queue_id integers the agent is serving
- * @param counterName - stamped on the called ticket
- */
 export const callNext = ({ serviceId, queueIds = [], counterName = '' }) =>
   _patch('/counter/call-next', {
     service_id:   serviceId,
-    queue_ids:    queueIds,      // array of ints, parsed by backend
+    queue_ids:    queueIds,
     counter_name: counterName,
   });
 
@@ -223,3 +201,25 @@ export const deleteDaySchedule = ({ serviceId, dayOfWeek }) =>
 
 export const getScheduleStatus = ({ serviceId }) =>
   _get('/schedule/status', { service_id: serviceId });
+
+// =============================================================
+// PROFILE
+// =============================================================
+export const updateUsername = ({ userId, username }) =>
+  _patch('/profile/username', { user_id: userId, username });
+
+export const initiateEmailChange = ({ userId, newEmail }) =>
+  _post('/profile/email/initiate', { user_id: userId, new_email: newEmail });
+
+export const confirmOldEmail = ({ userId, code }) =>
+  _post('/profile/email/confirm-old', { user_id: userId, code });
+
+export const confirmNewEmail = ({ userId, code }) =>
+  _post('/profile/email/confirm-new', { user_id: userId, code });
+
+export const updatePassword = ({ userId, currentPassword, newPassword }) =>
+  _patch('/profile/password', {
+    user_id:          userId,
+    current_password: currentPassword,
+    new_password:     newPassword,
+  });

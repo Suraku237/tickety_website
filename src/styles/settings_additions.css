@@ -1,0 +1,68 @@
+/* ============================================================
+   SETTINGS PAGE — ADDITIONS
+   Append to settings.css
+   New blocks: profile sections, email OTP flow, password eye,
+   secondary button, error banner, block titles
+   ============================================================ */
+
+/* Profile section blocks */
+.sp-profile-block {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 22px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.sp-block-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px;
+  color: var(--muted); margin-bottom: -4px;
+}
+
+.sp-block-sub {
+  font-size: 13px; color: var(--muted); margin-top: -8px;
+}
+
+/* Secondary button (outline style) */
+.sp-btn-secondary {
+  background: none; border: 1px solid var(--border);
+  color: var(--text); padding: 11px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; align-self: flex-start;
+  transition: border-color .2s, color .2s;
+}
+.sp-btn-secondary:hover {
+  border-color: var(--crimson); color: var(--crimson);
+}
+
+/* Error banner */
+.sp-error-banner {
+  background: rgba(220,15,15,.1); border: 1px solid rgba(220,15,15,.3);
+  color: var(--crimson); padding: 11px 16px; border-radius: 9px;
+  font-size: 13px; font-weight: 600;
+}
+
+/* OTP block inside profile */
+.sp-otp-block {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.sp-otp-hint {
+  font-size: 13px; color: var(--muted); line-height: 1.6;
+}
+.sp-otp-block .otp-grid {
+  justify-content: flex-start;
+  margin: 4px 0 0;
+}
+
+/* Password input with eye toggle */
+.sp-pw-wrap {
+  position: relative; display: flex; align-items: center;
+}
+.sp-pw-wrap .sp-input {
+  padding-right: 44px;
+}
+.sp-pw-eye {
+  position: absolute; right: 12px;
+  background: none; border: none; cursor: pointer;
+  font-size: 16px; line-height: 1; padding: 4px;
+  color: var(--muted); transition: color .2s;
+}
+.sp-pw-eye:hover { color: var(--text); }
