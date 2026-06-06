@@ -10,10 +10,12 @@ import '../styles/queuemanager.css';
 // QUEUE MANAGER PAGE
 // OOP Principle: Single Responsibility, Encapsulation
 //
-// Fixed: queues were stored in local useState only — they were
-//   never saved to the backend and disappeared on refresh.
-//   Now uses AppContext (createQueue, updateQueue, deleteQueue,
-//   loadQueues) so all operations go through the backend API.
+// Queue data lives in AppContext (backed by the real API).
+// Creating a queue → POST /api/queues → backend saves to DB
+//   and returns the queue with its join_token + join_url.
+// Deleting a queue → DELETE /api/queues/<queue_id>
+// QR modal reads queue.join_url (or builds it from join_token)
+//   to produce the correct HTTP URL the mobile app expects.
 // =============================================================
 
 const QUEUE_TYPES = [
@@ -27,15 +29,7 @@ export default function QueueManagerPage() {
   const navigate = useNavigate();
   const { user, logout } = useSession();
 
-  // Fixed: use AppContext instead of local useState for queues
-  const {
-    queues,
-    loading,
-    error:   contextError,
-    createQueue,
-    updateQueue,
-    deleteQueue,
-  } = useContext(AppContext);
+  const { queues, loading, error: contextError, createQueue, deleteQueue } = useContext(AppContext);
 
   const [showCreate, setShowCreate] = useState(false);
   const [qrTarget,   setQrTarget]   = useState(null);
@@ -53,7 +47,6 @@ export default function QueueManagerPage() {
   };
 
   // ── Create queue ─────────────────────────────────────────
-  // Fixed: now calls AppContext.createQueue() → backend API
   const handleCreate = async (e) => {
     e.preventDefault();
     const name = formName.trim();
@@ -64,11 +57,7 @@ export default function QueueManagerPage() {
       return;
     }
 
-    const result = await createQueue({
-      name,
-      description: '',
-      category:    formType,
-    });
+    const result = await createQueue({ name, category: formType });
 
     if (result?.success) {
       setFormName('');
@@ -80,16 +69,11 @@ export default function QueueManagerPage() {
     }
   };
 
-  // ── Toggle active/pause ──────────────────────────────────
-  // Fixed: now calls AppContext.updateQueue() → backend API
-  const toggleQueue = async (queue) => {
-    await updateQueue(queue.service_id, { isActive: !queue.is_active });
-  };
-
   // ── Delete queue ─────────────────────────────────────────
-  // Fixed: now calls AppContext.deleteQueue() → backend API
+  // Backend field: queue.queue_id  (string from to_dict())
   const handleDelete = async (queue) => {
-    await deleteQueue(queue.service_id);
+    if (!window.confirm(`Delete queue "${queue.name}"? This cannot be undone.`)) return;
+    await deleteQueue(queue.queue_id);
   };
 
   const typeOf = (id) => QUEUE_TYPES.find(t => t.id === id) || QUEUE_TYPES[0];
@@ -106,7 +90,7 @@ export default function QueueManagerPage() {
         </div>
 
         <nav className="db-nav">
-          <div className="db-nav-item" onClick={() => navigate('/dashboard')}>
+          <div className="db-nav-item" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
             <span>🏠</span> Dashboard
           </div>
           <div className="db-nav-item active">
@@ -151,7 +135,7 @@ export default function QueueManagerPage() {
           <div className="dash-topbar-right">
             <div className="dash-status-badge">
               <span className="dash-status-dot" />
-              {queues.filter(q => q.is_active).length} Active
+              {queues.length} Queue{queues.length !== 1 ? 's' : ''}
             </div>
             <button
               className="qm-btn-new"
@@ -167,7 +151,7 @@ export default function QueueManagerPage() {
           </div>
         </header>
 
-        {/* Context-level error banner */}
+        {/* Error banner */}
         {contextError && (
           <div className="auth-error" style={{ marginBottom: '16px' }}>
             <span className="auth-error-icon">⚠</span>{contextError}
@@ -233,7 +217,7 @@ export default function QueueManagerPage() {
           </div>
         )}
 
-        {/* ── LOADING STATE ── */}
+        {/* ── LOADING ── */}
         {loading && queues.length === 0 && (
           <div className="qm-empty">
             <span className="auth-spinner" />
@@ -267,36 +251,47 @@ export default function QueueManagerPage() {
                 <span className="qm-stat-lbl">Total Queues</span>
               </div>
               <div className="qm-stat">
-                <span className="qm-stat-val">{queues.filter(q => q.is_active).length}</span>
-                <span className="qm-stat-lbl">Active</span>
+                {/* pending + active count from backend */}
+                <span className="qm-stat-val">
+                  {queues.reduce((s, q) => s + (q.active ?? 0) + (q.pending ?? 0), 0)}
+                </span>
+                <span className="qm-stat-lbl">Tickets in Queue</span>
               </div>
             </div>
 
             <h2 className="dash-section-title">YOUR QUEUES</h2>
             <div className="qm-list">
               {queues.map(queue => {
-                // Fixed: backend uses 'category' as the type field
-                const t = typeOf(queue.category?.toLowerCase());
+                // Backend to_dict() fields: queue_id, service_id, name, code,
+                // color, join_token, join_url, active, pending
+                const t = typeOf(
+                  queue.code?.startsWith('VIP') ? 'vip'
+                  : queue.code?.startsWith('PRI') ? 'priority'
+                  : queue.code?.startsWith('MED') ? 'medical'
+                  : 'general'
+                );
+                const qColor = queue.color ?? t.color;
+
                 return (
-                  <div key={queue.service_id} className={`qm-card ${queue.is_active ? 'active' : 'paused'}`}>
+                  <div key={queue.queue_id} className="qm-card active">
                     <div className="qmc-left">
-                      <div className="qmc-type-dot" style={{ background: t.color }} />
+                      <div className="qmc-type-dot" style={{ background: qColor }} />
                       <div className="qmc-info">
                         <div className="qmc-name-row">
                           <span className="qmc-name">{queue.name}</span>
-                          <span className="qmc-type-badge" style={{ color: t.color, background: t.color + '18' }}>
-                            {t.icon} {t.label}
+                          <span className="qmc-type-badge"
+                            style={{ color: qColor, background: qColor + '18' }}>
+                            {queue.code}
                           </span>
                         </div>
                         <p className="qmc-meta">
-                          {queue.is_active ? '● Active' : '⏸ Paused'} ·
-                          Created {new Date(queue.created_at).toLocaleDateString()}
+                          ● Active · {queue.active ?? 0} serving · {queue.pending ?? 0} waiting
                         </p>
                       </div>
                     </div>
 
                     <div className="qmc-actions">
-                      {/* QR Code */}
+                      {/* QR Code — opens modal with the real join_url */}
                       <button
                         className="qmc-btn qmc-btn-qr"
                         onClick={() => setQrTarget(queue)}
@@ -313,16 +308,6 @@ export default function QueueManagerPage() {
                           <rect x="18" y="14" width="3" height="3"/>
                         </svg>
                         QR Code
-                      </button>
-
-                      {/* Toggle active/pause */}
-                      <button
-                        className={`qmc-btn ${queue.is_active ? 'qmc-btn-pause' : 'qmc-btn-resume'}`}
-                        onClick={() => toggleQueue(queue)}
-                        title={queue.is_active ? 'Pause queue' : 'Resume queue'}
-                        disabled={loading}
-                      >
-                        {queue.is_active ? '⏸ Pause' : '▶ Resume'}
                       </button>
 
                       {/* Delete */}

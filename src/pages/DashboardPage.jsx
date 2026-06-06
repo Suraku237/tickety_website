@@ -1,13 +1,17 @@
-import { useSession } from '../hooks/useSession';
+import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSession }  from '../hooks/useSession';
+import { AppContext }  from '../contexts/AppContext';
 import '../styles/dashboard.css';
 
 // =============================================================
-// DASHBOARD PAGE  (Crash-test placeholder)
+// DASHBOARD PAGE
 // OOP Principle: Single Responsibility, Encapsulation
-// All session logic delegated to useSession hook
 // =============================================================
 export default function DashboardPage() {
   const { user, logout } = useSession();
+  const navigate         = useNavigate();
+  const { queues }       = useContext(AppContext);
 
   if (!user) return null;
 
@@ -24,20 +28,22 @@ export default function DashboardPage() {
     return 'Good evening';
   };
 
+  const activeQueues = queues.length;
+
   const stats = [
-    { label: 'Active Queues',  value: '0', icon: '📋', color: '#DC0F0F' },
-    { label: 'Tickets Today',  value: '0', icon: '🎟',  color: '#3B82F6' },
-    { label: 'Team Members',   value: '1', icon: '👥',  color: '#22C55E' },
-    { label: 'Avg. Wait Time', value: '—', icon: '⏱',  color: '#F59E0B' },
+    { label: 'Active Queues',  value: String(activeQueues), icon: '📋', color: '#DC0F0F' },
+    { label: 'Tickets Today',  value: '0',                  icon: '🎟',  color: '#3B82F6' },
+    { label: 'Team Members',   value: '1',                  icon: '👥',  color: '#22C55E' },
+    { label: 'Avg. Wait Time', value: '—',                  icon: '⏱',  color: '#F59E0B' },
   ];
 
   const modules = [
-    { icon: '📋', title: 'Queue Manager',  desc: 'Create and manage service queues'   },
-    { icon: '🎟', title: 'Tickets',         desc: 'Monitor and call active tickets'    },
-    { icon: '👥', title: 'Team',            desc: 'Invite managers and agents'         },
-    { icon: '🖥', title: 'Counter Display', desc: 'Live board for counter screens'     },
-    { icon: '📊', title: 'Analytics',       desc: 'Queue performance & reports'        },
-    { icon: '⚙️', title: 'Settings',        desc: 'Service config & preferences'       },
+    { icon: '📋', title: 'Queue Manager',  desc: 'Create and manage service queues',   path: '/queues' },
+    { icon: '🎟', title: 'Tickets',         desc: 'Monitor and call active tickets',    path: null },
+    { icon: '👥', title: 'Team',            desc: 'Invite managers and agents',         path: null },
+    { icon: '🖥', title: 'Counter Display', desc: 'Live board for counter screens',     path: null },
+    { icon: '📊', title: 'Analytics',       desc: 'Queue performance & reports',        path: null },
+    { icon: '⚙️', title: 'Settings',        desc: 'Service config & preferences',       path: null },
   ];
 
   return (
@@ -53,7 +59,10 @@ export default function DashboardPage() {
 
         <nav className="db-nav">
           <div className="db-nav-item active"><span>🏠</span> Dashboard</div>
-          {['Queue Manager', 'Tickets', 'Team', 'Analytics', 'Settings'].map(item => (
+          <div className="db-nav-item" onClick={() => navigate('/queues')} style={{ cursor: 'pointer' }}>
+            <span>📋</span> Queue Manager
+          </div>
+          {['Tickets', 'Team', 'Analytics', 'Settings'].map(item => (
             <div key={item} className="db-nav-item disabled">
               <span className="db-nav-soon">SOON</span>{item}
             </div>
@@ -103,12 +112,13 @@ export default function DashboardPage() {
             <p className="dwb-tag">✅ ACCOUNT VERIFIED</p>
             <h2 className="dwb-title">
               {user.service_name
-                ? `${user.service_name} is ready to launch.`
+                ? `${user.service_name} is ready.`
                 : 'Your admin account is active.'}
             </h2>
             <p className="dwb-sub">
-              This is your crash-test dashboard. Full features are coming soon.
-              You're set up as <strong>Owner / Boss</strong> of this service.
+              You're set up as <strong>Owner / Boss</strong>.
+              Head to <strong>Queue Manager</strong> to create queues and generate QR codes
+              for your customers.
             </p>
           </div>
           <div className="dwb-icon">🚀</div>
@@ -129,10 +139,15 @@ export default function DashboardPage() {
         <h2 className="dash-section-title">MODULES</h2>
         <div className="dash-modules">
           {modules.map(m => (
-            <div key={m.title} className="module-card">
+            <div
+              key={m.title}
+              className={`module-card ${m.path ? 'clickable' : ''}`}
+              onClick={() => m.path && navigate(m.path)}
+              style={{ cursor: m.path ? 'pointer' : 'default' }}
+            >
               <div className="mc-top">
                 <span className="mc-icon">{m.icon}</span>
-                <span className="mc-tag">SOON</span>
+                {!m.path && <span className="mc-tag">SOON</span>}
               </div>
               <p className="mc-title">{m.title}</p>
               <p className="mc-desc">{m.desc}</p>

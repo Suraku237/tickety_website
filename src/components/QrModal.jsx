@@ -1,126 +1,133 @@
 import { useEffect, useRef, useState } from 'react';
-import '../styles/queuemanager.css'; // Fixed: was 'queueManager.css' (capital M) — fails on Linux
+import '../styles/queuemanager.css';
 
 // =============================================================
 // QR MODAL COMPONENT
 // OOP Principle: Single Responsibility, Encapsulation
 // Responsibilities:
-//   - Build a deterministic payload from queue + service data
-//   - Render a QR code via the qrcode.js CDN-free canvas API
-//   - Provide download + copy-link actions
-//   - Trap focus & close on Escape for accessibility
+//   - Build the join URL from the queue's join_token
+//   - Render a scannable QR code via qrcodejs
+//   - Provide Download PNG + Copy Link actions
+//   - Trap focus & close on Escape
 //
-// QR Payload (scanned by Flutter app):
-//   tickety://join?service_id=<id>&queue_id=<id>&service=<name>&queue=<name>
+// QR Payload (scanned by the Flutter app):
+//   http://<server>/api/join/<join_token>
+//
+// This is the EXACT URL the backend's POST /api/join/<join_token>
+// endpoint expects. The Flutter app extracts the token from this
+// URL and calls the backend to issue a ticket.
 // =============================================================
 
-// ── Tiny pure-JS QR encoder (no external dep) ───────────────
-// Uses the browser's built-in canvas to draw via qrcodejs loaded
-// from a data-URI script OR a tiny hand-rolled version below.
-// We use the qrcode-generator approach via dynamic script injection.
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://109.199.120.38:5000/api';
 
-function buildPayload(queue) {
-  // Fixed: use backend field names (service_id, service_token, name)
-  // instead of the old local-state shape (serviceId, id, serviceName)
-  const params = new URLSearchParams({
-    service_id:    String(queue.service_id    ?? queue.serviceId ?? ''),
-    service_token: String(queue.service_token ?? ''),
-    service:       queue.name                 ?? '',
-    type:          queue.category             ?? queue.type ?? 'general',
-  });
-  return `tickety://join?${params.toString()}`;
+function buildJoinUrl(queue) {
+  // join_token is the UUID stored in Queue.join_token on the backend.
+  // join_url is pre-built by the backend's to_dict(base_url) method.
+  // We prefer join_url if present; otherwise build it ourselves.
+  if (queue.join_url) return queue.join_url;
+  if (queue.join_token) return `${BASE_URL}/join/${queue.join_token}`;
+  return '';
 }
 
-// ── QR canvas renderer using qrcodejs (injected once) ───────
+// ── Lazy QR script loader (qrcodejs, MIT, no deps) ──────────
 let _scriptLoaded = false;
 let _scriptCallbacks = [];
 
 function loadQrScript(cb) {
-  if (typeof window.qrcode !== 'undefined') { cb(); return; }
+  if (typeof window.QRCode !== 'undefined') { cb(); return; }
   if (_scriptLoaded) { _scriptCallbacks.push(cb); return; }
   _scriptLoaded = true;
   _scriptCallbacks.push(cb);
 
-  const script = document.createElement('script');
-  // qrcode-generator — MIT licence, tiny, no deps
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-  script.onload = () => { _scriptCallbacks.forEach(f => f()); _scriptCallbacks = []; };
+  const script    = document.createElement('script');
+  script.src      = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  script.onload   = () => { _scriptCallbacks.forEach(f => f()); _scriptCallbacks = []; };
   document.head.appendChild(script);
 }
 
 // =============================================================
 export default function QrModal({ queue, onClose }) {
-  const containerRef = useRef(null);
+  const containerRef  = useRef(null);
   const qrInstanceRef = useRef(null);
   const [copied,    setCopied]    = useState(false);
   const [generated, setGenerated] = useState(false);
+  const [noToken,   setNoToken]   = useState(false);
 
-  const payload = buildPayload(queue);
+  const joinUrl = buildJoinUrl(queue);
 
-  // ── Close on Escape ──────────────────────────────────────
+  // ── Close on Escape ───────────────────────────────────────
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  // ── Render QR into canvas container ─────────────────────
+  // ── Render QR ─────────────────────────────────────────────
   useEffect(() => {
     if (!containerRef.current) return;
+
+    if (!joinUrl) {
+      setNoToken(true);
+      return;
+    }
 
     loadQrScript(() => {
       if (!containerRef.current) return;
       containerRef.current.innerHTML = '';
       qrInstanceRef.current = new window.QRCode(containerRef.current, {
-        text:           payload,
-        width:          220,
-        height:         220,
-        colorDark:      '#08060d',
-        colorLight:     '#ffffff',
-        correctLevel:   window.QRCode.CorrectLevel.H,
+        text:         joinUrl,
+        width:        220,
+        height:       220,
+        colorDark:    '#08060d',
+        colorLight:   '#ffffff',
+        correctLevel: window.QRCode.CorrectLevel.H,
       });
       setGenerated(true);
     });
 
     return () => {
-      if (qrInstanceRef.current) {
-        try { qrInstanceRef.current.clear(); } catch (_) {}
-      }
+      try { qrInstanceRef.current?.clear(); } catch (_) {}
     };
-  }, [payload]);
+  }, [joinUrl]);
 
-  // ── Download QR as PNG ───────────────────────────────────
+  // ── Download as PNG ───────────────────────────────────────
   const handleDownload = () => {
-    const img = containerRef.current?.querySelector('img') ||
-                containerRef.current?.querySelector('canvas');
-    if (!img) return;
+    const el = containerRef.current?.querySelector('img') ||
+               containerRef.current?.querySelector('canvas');
+    if (!el) return;
 
     let src;
-    if (img.tagName === 'CANVAS') {
-      src = img.toDataURL('image/png');
+    if (el.tagName === 'CANVAS') {
+      src = el.toDataURL('image/png');
     } else {
-      // QRCode.js renders an <img> — redraw onto a canvas to export
-      const canvas = document.createElement('canvas');
+      const canvas  = document.createElement('canvas');
       canvas.width  = 220;
       canvas.height = 220;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, 220, 220);
+      canvas.getContext('2d').drawImage(el, 0, 0, 220, 220);
       src = canvas.toDataURL('image/png');
     }
 
-    const a = document.createElement('a');
-    a.href     = src;
-    a.download = `tickety-qr-${queue.name.replace(/\s+/g, '-').toLowerCase()}.png`;
+    const a      = document.createElement('a');
+    a.href       = src;
+    a.download   = `tickety-qr-${queue.name.replace(/\s+/g, '-').toLowerCase()}.png`;
     a.click();
   };
 
-  // ── Copy deep-link to clipboard ──────────────────────────
+  // ── Copy join URL to clipboard ────────────────────────────
   const handleCopy = () => {
-    navigator.clipboard.writeText(payload).then(() => {
+    if (!joinUrl) return;
+    navigator.clipboard.writeText(joinUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  const categoryColor =
+    queue.color ??
+    (queue.code?.startsWith('VIP') ? '#DC0F0F'
+    : queue.code?.startsWith('PRI') ? '#F59E0B'
+    : queue.code?.startsWith('MED') ? '#22C55E'
+    : '#3B82F6');
 
   return (
     <div className="qrm-overlay" onClick={onClose} role="dialog" aria-modal="true">
@@ -131,27 +138,32 @@ export default function QrModal({ queue, onClose }) {
           <div className="qrm-header-left">
             <p className="qrm-badge">QR CODE</p>
             <h2 className="qrm-title">{queue.name}</h2>
-            {/* Fixed: backend has no serviceName field, use name only */}
-            <p className="qrm-service">🏢 {queue.name}</p>
+            <p className="qrm-service">🏢 {queue.service?.service_name ?? ''}</p>
           </div>
           <button className="qrm-close" onClick={onClose} aria-label="Close">✕</button>
         </div>
 
-        {/* QR Canvas */}
+        {/* QR canvas */}
         <div className="qrm-qr-wrap">
           <div className="qrm-qr-frame">
-            {/* Corner decorations */}
             <div className="qrm-corner qrm-c-tl" />
             <div className="qrm-corner qrm-c-tr" />
             <div className="qrm-corner qrm-c-bl" />
             <div className="qrm-corner qrm-c-br" />
 
-            <div ref={containerRef} className="qrm-canvas-host" />
-
-            {!generated && (
-              <div className="qrm-loading">
-                <span className="auth-spinner" />
+            {noToken ? (
+              <div className="qrm-loading" style={{ color: '#DC0F0F', fontSize: 13, textAlign: 'center', padding: 20 }}>
+                ⚠ No join token found.<br />Refresh the queue list.
               </div>
+            ) : (
+              <>
+                <div ref={containerRef} className="qrm-canvas-host" />
+                {!generated && (
+                  <div className="qrm-loading">
+                    <span className="auth-spinner" />
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -164,36 +176,29 @@ export default function QrModal({ queue, onClose }) {
           </div>
         </div>
 
-        {/* Payload preview */}
+        {/* Join URL preview */}
         <div className="qrm-payload">
-          <p className="qrm-payload-label">DEEP LINK</p>
-          <code className="qrm-payload-code">{payload}</code>
+          <p className="qrm-payload-label">JOIN URL</p>
+          <code className="qrm-payload-code">{joinUrl || '—'}</code>
         </div>
 
-        {/* Queue info chips */}
+        {/* Chips */}
         <div className="qrm-chips">
           <div className="qrm-chip">
-            <span className="qrm-chip-dot" style={{
-              background: queue.category === 'vip'      ? '#DC0F0F'
-                        : queue.category === 'priority' ? '#F59E0B'
-                        : queue.category === 'medical'  ? '#22C55E'
-                        : '#3B82F6'
-            }} />
-            {/* Fixed: backend uses 'category', not 'type' */}
-            {(queue.category ?? 'GENERAL').toUpperCase()} QUEUE
+            <span className="qrm-chip-dot" style={{ background: categoryColor }} />
+            {queue.code ?? 'QUEUE'}
           </div>
           <div className="qrm-chip">
-            {/* Fixed: backend uses 'is_active', not 'active' */}
-            {queue.is_active ? '● Active' : '⏸ Paused'}
+            {queue.active > 0 ? `● ${queue.active} active` : '⏸ Empty'}
           </div>
           <div className="qrm-chip">
-            ID: {String(queue.service_id ?? queue.id ?? '').slice(-6)}
+            Token: …{(queue.join_token ?? '').slice(-8)}
           </div>
         </div>
 
         {/* Actions */}
         <div className="qrm-actions">
-          <button className="qrm-btn qrm-btn-copy" onClick={handleCopy}>
+          <button className="qrm-btn qrm-btn-copy" onClick={handleCopy} disabled={!joinUrl}>
             {copied ? (
               <>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
@@ -227,8 +232,8 @@ export default function QrModal({ queue, onClose }) {
         </div>
 
         <p className="qrm-note">
-          This QR code encodes your service & queue identifiers. Customers scan it with
-          the TICKETY app to instantly join this queue without any manual input.
+          This QR encodes the official Tickety join URL. Customers scan it with the
+          TICKETY mobile app to instantly join this queue — no manual input required.
         </p>
       </div>
     </div>

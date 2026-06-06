@@ -114,3 +114,39 @@ export async function createService({ email, serviceName }) {
 export async function getMyServices({ email }) {
   return _get('/services/mine', { email });
 }
+
+// =============================================================
+// QUEUE ENDPOINTS
+// =============================================================
+
+/**
+ * Fetch all queues for a service.
+ */
+export async function getQueues({ serviceId }) {
+  return _get('/queues', { service_id: serviceId });
+}
+
+/**
+ * Create a new queue for a service.
+ */
+export async function createQueue({ serviceId, name, code, color }) {
+  return _post('/queues', { service_id: serviceId, name, code, color });
+}
+
+/**
+ * Delete a queue by ID.
+ */
+export async function deleteQueue({ queueId }) {
+  try {
+    const response = await fetch(`${BASE_URL}/queues/${queueId}`, {
+      method:  'DELETE',
+      headers: WEB_HEADERS,
+    });
+    return await response.json();
+  } catch {
+    return {
+      success: false,
+      message: 'Connection error. Please check your network.',
+    };
+  }
+}
