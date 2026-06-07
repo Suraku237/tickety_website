@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import AuthLayout       from '../components/AuthLayout';
 import FormField        from '../components/FormField';
 import { createService } from '../services/api.service';
-import { saveSession }   from '../services/session.service';
+import { useSession }    from '../hooks/useSession';
 import { useAuth }       from '../hooks/useAuth';
 import { validateServiceName } from '../utils/validators';
 import { ROLE_LABELS }   from '../utils/constants';
@@ -18,6 +18,7 @@ import { ROLE_LABELS }   from '../utils/constants';
 // =============================================================
 export default function ServiceSetupPage() {
   const navigate  = useNavigate();
+  const { updateSession } = useSession();
   const location  = useLocation();
 
   // Passed from RegistrationPage via router state after OTP verified
@@ -39,7 +40,7 @@ export default function ServiceSetupPage() {
       });
 
       if (data.success) {
-        saveSession({
+        updateSession({
           user_id:      data.user_id,
           username:     data.username,
           email:        data.email,

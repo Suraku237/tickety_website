@@ -1,0 +1,104 @@
+/* ============================================================
+   DYNAMIC STATE ADDITIONS
+   Append to dashboard.css (warning modal) and the relevant
+   page CSS files, or import globally.
+   ============================================================ */
+
+/* ── DASHBOARD — closing warning popup ── */
+.dash-warning-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.65);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 300;
+}
+.dash-warning-modal {
+  background: var(--card); border: 1px solid rgba(245,158,11,.35);
+  border-radius: 20px; padding: 40px 36px; width: 400px;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 12px; text-align: center;
+  box-shadow: 0 8px 48px rgba(0,0,0,.35);
+}
+.dwm-icon  { font-size: 44px; }
+.dwm-title {
+  font-family: 'Bebas Neue', sans-serif; font-size: 28px;
+  letter-spacing: 2px; color: var(--text);
+}
+.dwm-time  {
+  font-family: 'Bebas Neue', sans-serif; font-size: 42px;
+  color: #F59E0B; letter-spacing: 3px; line-height: 1;
+}
+.dwm-body  { font-size: 14px; color: var(--text); line-height: 1.6; }
+.dwm-sub   { font-size: 12px; color: var(--muted); }
+.dwm-btn {
+  background: #F59E0B; color: #fff; border: none;
+  padding: 12px 32px; border-radius: 10px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; margin-top: 4px;
+  transition: opacity .2s;
+}
+.dwm-btn:hover { opacity: .85; }
+
+/* Closed status badge variant */
+.dash-status-badge--closed {
+  background: rgba(220,15,15,.1);
+  border-color: rgba(220,15,15,.25);
+  color: var(--crimson);
+}
+.dash-status-dot--closed {
+  background: var(--crimson);
+  animation: none;
+}
+
+/* ── SHARED LOADING / ERROR / EMPTY ── */
+.qp-page-error,
+.cp-error-banner,
+.tp-error-banner,
+.ap-error-banner {
+  background: rgba(220,15,15,.1); border: 1px solid rgba(220,15,15,.3);
+  color: var(--crimson); padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.qp-list-loading,
+.qp-tickets-loading,
+.cp-loading,
+.tp-loading,
+.ap-loading {
+  color: var(--muted); font-size: 14px;
+  padding: 40px; text-align: center;
+}
+
+.qp-list-empty {
+  color: var(--muted); font-size: 13px;
+  text-align: center; line-height: 1.7;
+  padding: 24px 12px;
+}
+
+.tp-empty,
+.ap-empty {
+  text-align: center; color: var(--muted);
+  padding: 32px; font-size: 14px;
+}
+
+.cp-all-clear {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 60px;
+  color: var(--muted); font-size: 15px; text-align: center;
+}
+.cp-all-clear span { font-size: 40px; }
+
+/* ── QR modal — URL box (replaces fake grid) ── */
+.qp-qr-url-box {
+  display: flex; flex-direction: column; gap: 8px;
+  align-items: center; padding: 16px;
+}
+.qp-qr-url-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 2px; color: #888;
+}
+.qp-qr-url {
+  font-size: 11px; color: #0A0A0A; word-break: break-all;
+  text-align: center; max-width: 200px;
+  background: #f0f0f0; padding: 8px 12px;
+  border-radius: 8px; line-height: 1.5;
+}
