@@ -6,6 +6,7 @@ import {
   getQueues, createQueue, deleteQueue,
   getTickets, deleteTicket, setTicketPriority, swapTickets,
 } from '../services/api.service';
+import { QRCodeCanvas } from 'qrcode.react';
 import '../styles/queues.css';
 
 // =============================================================
@@ -16,6 +17,7 @@ import '../styles/queues.css';
 //   - Toast notifications on all actions
 // =============================================================
 
+const REFRESH_MS = 8000;   // #1 silent auto-refresh cadence
 const PRIORITIES = ['normal', 'high', 'urgent'];
 const PRIORITY_META = {
   normal: { label: 'Normal', color: '#888',    bg: 'rgba(136,136,136,0.12)' },
@@ -54,7 +56,6 @@ export default function QueuesPage() {
   // Create form
   const [showCreate,   setShowCreate]   = useState(false);
   const [newName,      setNewName]      = useState('');
-  const [newCode,      setNewCode]      = useState('');
   const [creating,     setCreating]     = useState(false);
 
   // QR modal
@@ -70,27 +71,26 @@ export default function QueuesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPrio,   setFilterPrio]   = useState('all');
 
-  // Issue ticket modal
-  const [showIssue,    setShowIssue]    = useState(null);  // queue object
-  const [issuePrio,    setIssuePrio]    = useState('normal');
+  // Issue ticket
   const [issuing,      setIssuing]      = useState(false);
-  // Ticket code popup (auto-dismiss)
-  const [ticketCodePopup, setTicketCodePopup] = useState(null); // { code, queueName }
+  // Print popup: shows the code + a 5s window to set priority
+  const [ticketCodePopup, setTicketCodePopup] = useState(null); // { code, queueName, ticketId, queueId, priority }
+  const [popupSecs,    setPopupSecs]    = useState(5);
 
   // ── LOAD QUEUES ──────────────────────────────────────────
-  const loadQueues = useCallback(async () => {
+  const loadQueues = useCallback(async (silent = false) => {
     if (!user?.service_id) return;
-    setLoading(true); setError('');
+    if (!silent) { setLoading(true); setError(''); }
     const data = await getQueues({ serviceId: user.service_id });
     if (data.success) {
       setQueues(data.queues || []);
       if (data.queues?.length && !activeQueue) {
         setActiveQueue(data.queues[0].queue_id);
       }
-    } else {
+    } else if (!silent) {
       setError(data.message || 'Failed to load queues.');
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [user?.service_id]);
 
   useEffect(() => { loadQueues(); }, [loadQueues]);
@@ -100,29 +100,62 @@ export default function QueuesPage() {
     loadTickets(activeQueue);
   }, [activeQueue]);
 
-  const loadTickets = async (queueId) => {
-    setTicketsLoad(true);
+  const loadTickets = async (queueId, silent = false) => {
+    if (!silent) setTicketsLoad(true);
     const data = await getTickets({ queueId, status: 'all', priority: 'all' });
     if (data.success) setTickets(data.tickets || []);
-    setTicketsLoad(false);
+    if (!silent) setTicketsLoad(false);
   };
+
+  // ── #1 SILENT AUTO-REFRESH ───────────────────────────────
+  // Refreshes queue stats + the open queue's tickets in the
+  // background. Pauses while a modal/menu/swap is in progress so
+  // it never disrupts what the user is doing, and when the tab is
+  // hidden. Also refreshes immediately when the tab regains focus.
+  const interacting = Boolean(
+    showCreate || showQR || deleteTarget ||
+    ticketMenu || swapTarget || ticketCodePopup
+  );
+  useEffect(() => {
+    const tick = () => {
+      if (document.hidden || interacting) return;
+      loadQueues(true);
+      if (activeQueue) loadTickets(activeQueue, true);
+    };
+    const id = setInterval(tick, REFRESH_MS);
+    const onVisible = () => { if (!document.hidden && !interacting) tick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [interacting, activeQueue, loadQueues]);
+
+  // 5-second countdown for the printed-ticket popup; auto-closes at 0.
+  useEffect(() => {
+    if (!ticketCodePopup) return;
+    setPopupSecs(5);
+    const id = setInterval(() => {
+      setPopupSecs(prev => {
+        if (prev <= 1) { clearInterval(id); setTicketCodePopup(null); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [ticketCodePopup]);
 
   // ── CREATE QUEUE ─────────────────────────────────────────
   const handleCreateQueue = async () => {
-    if (!newName.trim() || !newCode.trim()) return;
+    if (!newName.trim()) return;
     setCreating(true);
     const color = QUEUE_COLORS[queues.length % QUEUE_COLORS.length];
     const data  = await createQueue({
       serviceId: user.service_id,
       name:      newName.trim(),
-      code:      newCode.trim().toUpperCase(),
       color,
     });
     if (data.success) {
       setQueues(prev => [...prev, data.queue]);
       setActiveQueue(data.queue.queue_id);
-      setNewName(''); setNewCode(''); setShowCreate(false);
-      pushToast({ type: 'queue_created', title: `Queue created: ${data.queue.name}`, body: `Code: ${data.queue.code}` });
+      setNewName(''); setShowCreate(false);
+      pushToast({ type: 'queue_created', title: `Queue created: ${data.queue.name}`, body: 'A join link & QR are ready.' });
     } else {
       setError(data.message || 'Failed to create queue.');
     }
@@ -149,27 +182,41 @@ export default function QueuesPage() {
   };
 
   // ── ISSUE TICKET (manual/printed) ─────────────────────────
-  const handleIssueTicket = async () => {
-    if (!showIssue) return;
+  // Issues immediately as normal priority, then shows a 5-second
+  // popup so the manager can bump the priority (or leave it normal).
+  const handleIssueDirect = async (queue) => {
     setIssuing(true);
-    const data = await issueTicket({ queueId: showIssue.queue_id, priority: issuePrio });
+    const data = await issueTicket({ queueId: queue.queue_id, priority: 'normal' });
     setIssuing(false);
     if (data.success) {
-      setShowIssue(null);
-      setIssuePrio('normal');
-      // Show the code popup for 10 seconds
-      setTicketCodePopup({ code: data.ticket.code, queueName: showIssue.name });
-      setTimeout(() => setTicketCodePopup(null), 10000);
-      // Refresh queue stats + tickets
-      loadQueues();
-      if (activeQueue === showIssue.queue_id) loadTickets(activeQueue);
+      setTicketCodePopup({
+        code:      data.ticket.code,
+        queueName: queue.name,
+        ticketId:  data.ticket.ticket_id,
+        queueId:   queue.queue_id,
+        priority:  'normal',
+      });
+      loadQueues(true);
+      if (activeQueue === queue.queue_id) loadTickets(activeQueue, true);
       pushToast({
         type:  'ticket_printed',
-        title: `Printed ticket issued: ${data.ticket.code}`,
-        body:  `Write this code on the physical ticket.`,
+        title: `Printed ticket: ${data.ticket.code}`,
+        body:  'Write this code on the physical ticket.',
       });
     } else {
       setError(data.message || 'Failed to issue ticket.');
+    }
+  };
+
+  // Set priority from inside the 5s popup (then close it).
+  const handlePopupPriority = async (p) => {
+    const popup = ticketCodePopup;
+    if (!popup) return;
+    setTicketCodePopup(null);
+    if (p !== popup.priority) {
+      await setTicketPriority({ ticketId: popup.ticketId, priority: p });
+      if (activeQueue === popup.queueId) loadTickets(activeQueue, true);
+      pushToast({ type: 'info', title: `Priority set to ${p}` });
     }
   };
 
@@ -249,8 +296,6 @@ export default function QueuesPage() {
               <p className="qp-create-label">NEW QUEUE</p>
               <input className="qp-input" placeholder="Queue name"
                 value={newName} onChange={e => setNewName(e.target.value)} />
-              <input className="qp-input" placeholder="Short code (e.g. GEN-01)"
-                value={newCode} onChange={e => setNewCode(e.target.value)} />
               <div className="qp-create-row">
                 <button className="qp-btn-ghost" onClick={() => setShowCreate(false)}>Cancel</button>
                 <button className="qp-btn-primary" onClick={handleCreateQueue} disabled={creating}>
@@ -307,7 +352,8 @@ export default function QueuesPage() {
                     <div className="qp-queue-card-actions" onClick={e => e.stopPropagation()}>
                       {canIssue && (
                         <button className="qp-card-btn qp-card-btn--issue"
-                          onClick={() => { setShowIssue(q); setIssuePrio('normal'); }}>
+                          disabled={issuing}
+                          onClick={() => handleIssueDirect(q)}>
                           🖨 Issue Ticket
                         </button>
                       )}
@@ -491,8 +537,12 @@ export default function QueuesPage() {
             <button className="qp-modal-close" onClick={() => setShowQR(null)}>✕</button>
             <p className="qp-modal-title">QUEUE QR CODE</p>
             <div className="qp-qr-box">
+              <div style={{ background:'#fff', padding:'16px', borderRadius:'12px',
+                            display:'flex', justifyContent:'center', marginBottom:'14px' }}>
+                <QRCodeCanvas value={showQR.join_url} size={200} includeMargin level="M" />
+              </div>
               <div className="qp-qr-url-box">
-                <p className="qp-qr-url-label">CUSTOMER SCAN LINK</p>
+                <p className="qp-qr-url-label">SCAN, OR ENTER THIS LINK MANUALLY</p>
                 <p className="qp-qr-url">{showQR.join_url}</p>
               </div>
             </div>
@@ -523,41 +573,7 @@ export default function QueuesPage() {
         </div>
       )}
 
-      {/* ── ISSUE TICKET MODAL ── */}
-      {showIssue && (
-        <div className="qp-modal-overlay" onClick={() => setShowIssue(null)}>
-          <div className="qp-modal" onClick={e => e.stopPropagation()}>
-            <button className="qp-modal-close" onClick={() => setShowIssue(null)}>✕</button>
-            <p className="qp-modal-title">ISSUE PRINTED TICKET</p>
-            <p style={{ fontSize:'14px', color:'var(--text)', fontWeight:700, marginBottom:'4px' }}>
-              {showIssue.name}
-            </p>
-            <p style={{ fontSize:'13px', color:'var(--muted)', marginBottom:'20px', lineHeight:1.6 }}>
-              This creates a ticket in the system. Write the displayed code on the physical ticket for the customer.
-            </p>
-            <p className="qp-create-label" style={{ alignSelf:'flex-start' }}>PRIORITY</p>
-            <div style={{ display:'flex', gap:'8px', width:'100%', marginBottom:'8px' }}>
-              {['normal','high','urgent'].map(p => (
-                <button key={p}
-                  className={`qp-filter-btn ${issuePrio === p ? 'active' : ''}`}
-                  style={{ flex:1 }}
-                  onClick={() => setIssuePrio(p)}>
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </button>
-              ))}
-            </div>
-            <div className="qp-confirm-actions" style={{ marginTop:'12px' }}>
-              <button className="qp-btn-ghost" onClick={() => setShowIssue(null)}>Cancel</button>
-              <button className="qp-btn-primary" style={{ flex:1, justifyContent:'center' }}
-                disabled={issuing} onClick={handleIssueTicket}>
-                {issuing ? '…' : '🖨 Issue Ticket'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── TICKET CODE POPUP (auto-dismiss 10s) ── */}
+      {/* ── PRINTED TICKET POPUP — 5s window to set priority ── */}
       {ticketCodePopup && (
         <div className="qp-modal-overlay" onClick={() => setTicketCodePopup(null)}>
           <div className="qp-modal qp-modal--confirm" onClick={e => e.stopPropagation()}
@@ -567,7 +583,7 @@ export default function QueuesPage() {
             <p style={{ fontSize:'13px', color:'var(--muted)' }}>Write this code on the physical ticket:</p>
             <div style={{
               background:'var(--card2)', border:'2px solid #F59E0B',
-              borderRadius:'12px', padding:'20px 32px', margin:'8px 0',
+              borderRadius:'12px', padding:'18px 32px', margin:'8px 0',
             }}>
               <p style={{
                 fontFamily:"'Bebas Neue', sans-serif", fontSize:'52px',
@@ -579,12 +595,26 @@ export default function QueuesPage() {
                 {ticketCodePopup.queueName}
               </p>
             </div>
-            <p style={{ fontSize:'11px', color:'var(--muted)', opacity:.6 }}>
-              This popup closes automatically in 10 seconds
+
+            <p className="qp-create-label" style={{ alignSelf:'center', marginTop:'4px' }}>
+              SET PRIORITY
             </p>
-            <button className="qp-btn-primary" style={{ width:'100%', justifyContent:'center' }}
+            <div style={{ display:'flex', gap:'8px', width:'100%', margin:'8px 0 4px' }}>
+              {['normal','high','urgent'].map(p => (
+                <button key={p}
+                  className={`qp-filter-btn ${ticketCodePopup.priority === p ? 'active' : ''}`}
+                  style={{ flex:1 }}
+                  onClick={() => handlePopupPriority(p)}>
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize:'11px', color:'var(--muted)', opacity:.6, marginTop:'4px' }}>
+              Closes in {popupSecs}s · stays Normal if you don't choose
+            </p>
+            <button className="qp-btn-primary" style={{ width:'100%', justifyContent:'center', marginTop:'6px' }}
               onClick={() => setTicketCodePopup(null)}>
-              Got it
+              Done
             </button>
           </div>
         </div>

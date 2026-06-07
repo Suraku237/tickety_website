@@ -57,7 +57,7 @@ export default function TeamPage() {
       setTeam(prev => prev.filter(m => m.admin_id !== deleteTarget.admin_id));
       setDeleteTarget(null);
     } else {
-      setError(data.message || 'Failed to remove admin.');
+      setError(data.message || 'Failed to delete account.');
     }
     setDeleting(false);
   };
@@ -245,14 +245,14 @@ export default function TeamPage() {
         <div className="tp-overlay" onClick={() => setDeleteTarget(null)}>
           <div className="tp-modal tp-modal--sm" onClick={e => e.stopPropagation()}>
             <p className="tp-modal-icon">🗑</p>
-            <h2 className="tp-modal-title">Remove {deleteTarget.username}?</h2>
+            <h2 className="tp-modal-title">Delete {deleteTarget.username}?</h2>
             <p className="tp-modal-sub">
-              This will revoke their access to the service.
+              This permanently deletes their account from the database. This cannot be undone.
             </p>
             <div className="tp-modal-actions">
               <button className="tp-btn-ghost" onClick={() => setDeleteTarget(null)}>Cancel</button>
               <button className="tp-btn-danger" disabled={deleting} onClick={handleDelete}>
-                {deleting ? 'Removing…' : 'Remove'}
+                {deleting ? 'Deleting…' : 'Delete account'}
               </button>
             </div>
           </div>

@@ -397,3 +397,34 @@
   background: rgba(245,158,11,0.2);
   border-color: rgba(245,158,11,0.5);
 }
+/* ============================================================
+   #7 — Fluid tickets table + un-clipped actions menu
+   - was: .qp-table-wrap { overflow-x:auto } -> forced side-scroll
+          .qp-table      { overflow:hidden } -> clipped the dropdown
+   - now: columns fit (and hide progressively on small widths),
+          and the panel no longer traps the actions menu.
+   ============================================================ */
+.qp-table-wrap { overflow: visible; }
+.qp-table      { overflow: visible; }
+.qp-main       { overflow: visible; }
+/* Let the whole right column flow with the page instead of an inner
+   fixed-height scroll box that clipped the actions menu. */
+.qp-root       { height: auto; min-height: calc(100vh - 160px); }
+
+/* Tighter, wrap-friendly cells so all key columns fit without swiping */
+.qp-table th, .qp-table td { padding: 11px 10px; }
+.qp-ticket-code { white-space: normal; word-break: break-word; }
+.qp-dropdown { z-index: 200; }
+
+/* Progressive column hiding — always keep #, Code, Status, Priority, Actions */
+@media (max-width: 1180px) {
+  .qp-table th:nth-child(6), .qp-table td:nth-child(6),  /* Issued */
+  .qp-table th:nth-child(7), .qp-table td:nth-child(7) { /* Est. Serve */
+    display: none;
+  }
+}
+@media (max-width: 940px) {
+  .qp-table th:nth-child(5), .qp-table td:nth-child(5) { /* Counter */
+    display: none;
+  }
+}

@@ -29,11 +29,19 @@ const PRIORITY_META = {
 export default function CounterPage() {
   const { user } = useSession();
 
+  // #4 — remember the counter setup so navigating away or refreshing keeps
+  // the agent on the manage view. Only "Change setup" clears it.
+  const SETUP_KEY = `tickety_counter_setup_${user?.service_id ?? 'x'}`;
+  const _saved = (() => {
+    try { return JSON.parse(sessionStorage.getItem(SETUP_KEY) || 'null'); }
+    catch { return null; }
+  })();
+
   // ── SETUP STATE ─────────────────────────────────────────
-  const [setupDone,     setSetupDone]     = useState(false);
+  const [setupDone,     setSetupDone]     = useState(Boolean(_saved?.setupDone));
   const [allQueues,     setAllQueues]     = useState([]);
-  const [selectedQueues,setSelectedQueues]= useState([]);   // array of queue_ids (int)
-  const [counterName,   setCounterName]   = useState('');
+  const [selectedQueues,setSelectedQueues]= useState(_saved?.selectedQueues ?? []);   // array of queue_ids (int)
+  const [counterName,   setCounterName]   = useState(_saved?.counterName ?? '');
   const [queuesLoading, setQueuesLoading] = useState(true);
   const [setupError,    setSetupError]    = useState('');
 
@@ -78,12 +86,19 @@ export default function CounterPage() {
     }
     setSetupError('');
     setSetupDone(true);
+    try {
+      sessionStorage.setItem(SETUP_KEY, JSON.stringify({
+        setupDone: true,
+        selectedQueues,
+        counterName: counterName.trim(),
+      }));
+    } catch { /* ignore */ }
   };
 
   // ── LOAD TICKETS ─────────────────────────────────────────
-  const load = useCallback(async () => {
+  const load = useCallback(async (silent = false) => {
     if (!user?.service_id || !setupDone) return;
-    setLoading(true); setError('');
+    if (!silent) { setLoading(true); setError(''); }
     const data = await getCounterTickets({
       serviceId:   user.service_id,
       queueIds:    selectedQueues.join(','),
@@ -95,15 +110,33 @@ export default function CounterPage() {
       setSuspended(data.suspended || []);
       if (data.closing_warning?.warning) {
         setWarning(data.closing_warning);
-        setShowWarning(true);
+        // Only auto-open the warning modal on an explicit load, not on
+        // every silent poll — otherwise it would re-open after dismiss.
+        if (!silent) setShowWarning(true);
       }
-    } else {
+    } else if (!silent) {
       setError(data.message || 'Failed to load tickets.');
     }
-    setLoading(false);
+    if (!silent) setLoading(false);
   }, [user?.service_id, setupDone, selectedQueues, counterName]);
 
   useEffect(() => { if (setupDone) load(); }, [setupDone, load]);
+
+  // ── #1 SILENT AUTO-REFRESH (live serving board) ──────────
+  // Fast cadence since this is the agent's live view. Pauses while
+  // a confirm dialog is open or the tab is hidden; refreshes at once
+  // when the tab regains focus.
+  useEffect(() => {
+    if (!setupDone) return;
+    const tick = () => {
+      if (document.hidden || confirmId) return;
+      load(true);
+    };
+    const id = setInterval(tick, 5000);
+    const onVisible = () => { if (!document.hidden && !confirmId) tick(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
+  }, [setupDone, confirmId, load]);
 
   // ── APPLY RESPONSE ───────────────────────────────────────
   const applyResponse = (data) => {
@@ -262,6 +295,7 @@ export default function CounterPage() {
         <button className="cp-session-change" onClick={() => {
           setSetupDone(false);
           setServing(null); setWaiting([]); setSuspended([]);
+          try { sessionStorage.removeItem(SETUP_KEY); } catch { /* ignore */ }
         }}>
           Change setup
         </button>

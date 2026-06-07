@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AuthLayout     from '../components/AuthLayout';
 import FormField      from '../components/FormField';
 import { login }      from '../services/api.service';
-import { saveSession } from '../services/session.service';
+import { useSession } from '../hooks/useSession';
 import { useAuth }    from '../hooks/useAuth';
 import { validateEmail, validatePassword, validate } from '../utils/validators';
 
@@ -26,6 +26,7 @@ const ROLE_HOME = {
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { updateSession } = useSession();
   const { loading, error, setError, submit } = useAuth();
 
   const [email,    setEmail]    = useState('');
@@ -47,7 +48,7 @@ export default function LoginPage() {
       });
 
       if (data.success) {
-        saveSession(data);
+        updateSession(data);   // reactive: updates context + storage so the dashboard renders correctly without a refresh
         const home = ROLE_HOME[data.admin_role] ?? '/dashboard';
         navigate(home);
       } else if (data.statusCode === 403 && data.message?.includes('verify')) {

@@ -4,7 +4,7 @@
 // OOP Principle: Singleton, Encapsulation, Abstraction
 // =============================================================
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://tickety.duckdns.org/api';
 
 const WEB_HEADERS = {
   'Content-Type': 'application/json',
@@ -97,8 +97,8 @@ export const getMyServices  = ({ email }) =>
 export const getQueues = ({ serviceId }) =>
   _get('/queues', { service_id: serviceId });
 
-export const createQueue = ({ serviceId, name, code, color }) =>
-  _post('/queues', { service_id: serviceId, name, code, color });
+export const createQueue = ({ serviceId, name, color }) =>
+  _post('/queues', { service_id: serviceId, name, color });
 
 export const deleteQueue = ({ queueId }) =>
   _delete(`/queues/${queueId}`);

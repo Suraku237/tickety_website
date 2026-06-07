@@ -21,6 +21,8 @@ const NotificationContext = createContext({
   pushToast:      () => {},
   markAllRead:    () => {},
   markRead:       () => {},
+  muted:          false,
+  toggleMute:     () => {},
   refresh:        () => {},
 });
 
@@ -28,6 +30,14 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount,   setUnreadCount]   = useState(0);
   const [toasts,        setToasts]        = useState([]);
+  // #11 — mute: when on, notifications still load (badge + list update)
+  // but no toast pops. Persisted across sessions in localStorage.
+  const [muted, setMuted] = useState(() => {
+    try { return localStorage.getItem('tickety_notif_muted') === '1'; }
+    catch { return false; }
+  });
+  const mutedRef      = useRef(muted);
+  useEffect(() => { mutedRef.current = muted; }, [muted]);
   const prevUnreadRef = useRef(0);
   const toastIdRef    = useRef(0);
 
@@ -50,7 +60,7 @@ export function NotificationProvider({ children }) {
       // Auto-toast any NEW unread notifications since last poll
       const prevUnread = prevUnreadRef.current;
       const newCount   = data.unread_count || 0;
-      if (newCount > prevUnread) {
+      if (!mutedRef.current && newCount > prevUnread) {
         const newNotifs = (data.notifications || [])
           .filter(n => !n.read)
           .slice(0, newCount - prevUnread);
@@ -97,6 +107,16 @@ export function NotificationProvider({ children }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // #11 — toggle mute (and clear any toasts already on screen when muting)
+  const toggleMute = useCallback(() => {
+    setMuted(prev => {
+      const next = !prev;
+      try { localStorage.setItem('tickety_notif_muted', next ? '1' : '0'); } catch { /* ignore */ }
+      if (next) setToasts([]);
+      return next;
+    });
+  }, []);
+
   // ── MARK READ ────────────────────────────────────────────
   const markRead = useCallback(async (notificationId) => {
     if (!user?.service_id) return;
@@ -135,6 +155,8 @@ export function NotificationProvider({ children }) {
       dismissToast,
       markAllRead,
       markRead,
+      muted,
+      toggleMute,
       refresh: fetchNotifications,
     }}>
       {children}

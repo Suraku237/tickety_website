@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSession } from '../hooks/useSession';
+import { restoreSession } from '../services/session.service';
 import NotificationPanel from './NotificationPanel';
 import ToastContainer   from './ToastContainer';
 import '../styles/dashboard.css';
@@ -24,7 +25,9 @@ export default function DashLayout({ children, title, subtitle }) {
   const location         = useLocation();
   const { user, logout } = useSession();
 
-  const role     = user?.admin_role ?? 'boss';
+  // Fall back to stored role if context hasn't hydrated yet, so the
+  // correct tabs show on first paint after login (no refresh needed).
+  const role     = user?.admin_role ?? restoreSession()?.admin_role ?? 'agent';
   const navItems = ALL_NAV_ITEMS.filter(item => item.roles.includes(role));
 
   const getInitials = (name = '') => {

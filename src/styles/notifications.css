@@ -138,3 +138,15 @@
 @media (max-width: 600px) {
   .notif-panel { width: 100%; }
 }
+/* #11 — muted notification bell cue */
+.notif-bell--muted { opacity: 0.55; }
+.notif-bell--muted::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top left,
+    transparent calc(50% - 1px), currentColor calc(50% - 1px),
+    currentColor calc(50% + 1px), transparent calc(50% + 1px));
+  opacity: 0.5;
+  pointer-events: none;
+}

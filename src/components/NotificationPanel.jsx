@@ -32,7 +32,7 @@ function timeAgo(isoString) {
 
 export default function NotificationPanel() {
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markAllRead, markRead } = useNotifications();
+  const { notifications, unreadCount, markAllRead, markRead, muted, toggleMute } = useNotifications();
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -48,7 +48,7 @@ export default function NotificationPanel() {
   return (
     <>
       {/* BELL BUTTON */}
-      <button className="notif-bell" onClick={handleOpen} aria-label="Notifications">
+      <button className={`notif-bell ${muted ? 'notif-bell--muted' : ''}`} onClick={handleOpen} aria-label="Notifications">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2">
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -74,6 +74,13 @@ export default function NotificationPanel() {
             )}
           </div>
           <div className="notif-panel-actions">
+            <button
+              className="notif-mark-all"
+              onClick={toggleMute}
+              title={muted ? 'Notifications are muted — click to unmute' : 'Mute pop-up notifications'}
+            >
+              {muted ? '🔕 Muted' : '🔔 Mute'}
+            </button>
             {unreadCount > 0 && (
               <button className="notif-mark-all" onClick={handleMarkAll}>
                 Mark all read

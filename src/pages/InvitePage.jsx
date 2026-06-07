@@ -4,7 +4,7 @@ import AuthLayout  from '../components/AuthLayout';
 import FormField   from '../components/FormField';
 import OtpGrid     from '../components/OtpGrid';
 import { register, verifyEmail, resendOtp, validateInvite, completeInvite } from '../services/api.service';
-import { saveSession } from '../services/session.service';
+import { useSession } from '../hooks/useSession';
 import { useAuth }  from '../hooks/useAuth';
 import {
   validateUsername, validateEmail,
@@ -20,6 +20,7 @@ import { RESEND_COOLDOWN_SECONDS } from '../utils/constants';
 export default function InvitePage() {
   const { token }  = useParams();
   const navigate   = useNavigate();
+  const { updateSession } = useSession();
   const { loading, error, setError, successMsg, setSuccessMsg, submit } = useAuth();
 
   const [step,        setStep]        = useState(0);   // 0 = loading invite info
@@ -95,7 +96,7 @@ export default function InvitePage() {
 
       if (completeData.success) {
         // Build session from verify response + invite completion data
-        saveSession({
+        updateSession({
           user_id:      verifyData.user_id,
           username:     verifyData.username,
           email:        verifyData.email,

@@ -479,12 +479,6 @@ export default function SettingsPage() {
                       <input type="time" className="sch-input" value={editGeneral.closing_time}
                         onChange={e => setEditGeneral(p => ({ ...p, closing_time: e.target.value }))} />
                     </div>
-                    <div className="sch-field">
-                      <label className="sch-label">AVG DURATION (min)</label>
-                      <input type="number" min="1" max="60" className="sch-input"
-                        value={editGeneral.avg_duration}
-                        onChange={e => setEditGeneral(p => ({ ...p, avg_duration: parseInt(e.target.value) || 10 }))} />
-                    </div>
                   </div>
                 )}
                 <button className="sp-btn-primary" onClick={handleSaveGeneral}>Save general schedule</button>
@@ -528,12 +522,6 @@ export default function SettingsPage() {
                                 <label className="sch-label">CLOSE</label>
                                 <input type="time" className="sch-input" value={editDay.closing_time}
                                   onChange={e => setEditDay(p => ({ ...p, closing_time: e.target.value }))} />
-                              </div>
-                              <div className="sch-field">
-                                <label className="sch-label">AVG (min)</label>
-                                <input type="number" min="1" max="60" className="sch-input"
-                                  value={editDay.avg_duration}
-                                  onChange={e => setEditDay(p => ({ ...p, avg_duration: parseInt(e.target.value) || 10 }))} />
                               </div>
                             </div>
                           )}
