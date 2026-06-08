@@ -15,12 +15,23 @@
   --muted:       #666;
   --muted2:      #444;
   --radius:      14px;
+
+  /* Used by AboutSection.jsx */
+  --bg:          #141414;
+  --text-h:      #F0F0F0;
+  --accent:      #DC0F0F;
+
+  color-scheme: dark;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-body { background: var(--surface); color: var(--text);
-  font-family: 'DM Sans', sans-serif; }
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  color-scheme: dark;
+}
 
 /* CANVAS */
 .land-root { position: relative; min-height: 100vh; overflow: hidden; }
@@ -264,4 +275,38 @@ body { background: var(--surface); color: var(--text);
   .hero-right { display: none; }
   .mobile-strip { flex-direction: column; padding: 60px 24px; }
   .ms-right { display: none; }
+}
+
+/* NAV TABS */
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.nav-tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 0.2px;
+}
+.nav-tab:hover {
+  color: var(--text);
+  background: rgba(255,255,255,0.05);
+}
+.nav-tab:active {
+  color: var(--crimson);
+}
+
+@media (max-width: 768px) {
+  .nav-tabs { display: none; }
 }
