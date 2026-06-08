@@ -5,7 +5,7 @@ import react from "@vitejs/plugin-react";
 // Vitest natively supports import.meta.env (used by api.service.js), ESM,
 // and a jsdom DOM — which is why it's used here rather than Jest.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ jsxRuntime: "automatic" })],
   test: {
     environment: "jsdom",
     globals: true,
