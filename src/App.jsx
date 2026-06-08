@@ -5,6 +5,7 @@ import RegistrationPage from './pages/RegistrationPage';
 import ServiceSetupPage from './pages/ServiceSetupPage';
 import InvitePage       from './pages/InvitePage';
 import VerifyPage       from './pages/VerifyPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DashboardPage    from './pages/DashboardPage';
 import QueuesPage       from './pages/QueuesPage';
 import CounterPage      from './pages/CountersPage';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/login"         element={<LoginPage />}         />
         <Route path="/register"      element={<RegistrationPage />}  />
         <Route path="/verify"        element={<VerifyPage />}        />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/setup-service" element={<ServiceSetupPage />}  />
         <Route path="/invite/:token" element={<InvitePage />}        />
 

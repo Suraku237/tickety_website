@@ -7,7 +7,7 @@ import { useNotifications } from '../context/NotificationContext';
 import {
   getSchedule, setGeneralSchedule, setDaySchedule, deleteDaySchedule,
   updateUsername, initiateEmailChange, confirmOldEmail, confirmNewEmail,
-  updatePassword,
+  updatePassword, deleteService, getPushHealth,
 } from '../services/api.service';
 import '../styles/settings.css';
 import '../styles/settings_additions.css';
@@ -31,10 +31,43 @@ const EMAIL_STEP   = { IDLE: 0, ENTER_NEW: 1, VERIFY_OLD: 2, VERIFY_NEW: 3, DONE
 export default function SettingsPage() {
   // Fix 2: use updateSession for reactive UI updates
   const { user, updateSession, logout } = useSession();
+  const [showDeleteService, setShowDeleteService] = useState(false);
+  const [deletingService,   setDeletingService]   = useState(false);
+  const [deleteErr,         setDeleteErr]          = useState('');
+
+  // --- Push notifications status (#8 visible health) ---
+  const [push,        setPush]        = useState(null);   // health payload
+  const [pushBusy,    setPushBusy]    = useState(false);
+
+  const loadPush = async (probe = false) => {
+    setPushBusy(true);
+    const data = await getPushHealth({ probe, userId: user?.user_id });
+    setPushBusy(false);
+    if (data.success) setPush({ ...data, probed: probe });
+    else setPush({ status: 'error', error: data.message || 'Could not reach the server.' });
+  };
+
+  const PUSH_UI = {
+    working:        { color:'#22C55E', label:'Working',                    icon:'✓' },
+    configured:     { color:'#F59E0B', label:'Configured (not yet tested)', icon:'•' },
+    misconfigured:  { color:'#DC0F0F', label:'Configured but failing',      icon:'⚠' },
+    not_configured: { color:'#888',    label:'Not set up',                  icon:'○' },
+    error:          { color:'#DC0F0F', label:'Cannot reach server',         icon:'⚠' },
+  };
+
+  const handleDeleteService = async () => {
+    setDeletingService(true);
+    const data = await deleteService({ serviceId: user.service_id, userId: user.user_id });
+    setDeletingService(false);
+    if (data.success) { logout(); }   // service is gone — end the session
+    else { setDeleteErr(data.message || 'Could not delete service.'); }
+  };
   const { theme, setTheme, isDark }     = useTheme();
   const { pushToast }                   = useNotifications();
 
   const [section, setSection] = useState('profile');
+  // Load push status when the Account tab is opened (section is defined above).
+  useEffect(() => { if (section === 'account') loadPush(false); /* eslint-disable-next-line */ }, [section]);
   const isBoss = user?.admin_role === 'boss';
 
   // ── USERNAME ──────────────────────────────────────────────
@@ -576,6 +609,58 @@ export default function SettingsPage() {
                   Sign out
                 </button>
               </div>
+
+              {(() => {
+                const meta = PUSH_UI[push?.status] || PUSH_UI.not_configured;
+                return (
+                  <div className="sp-danger-card" style={{ marginTop:'14px', borderColor:`${meta.color}66` }}>
+                    <div className="sp-danger-info">
+                      <p className="sp-danger-title">
+                        Push notifications:{' '}
+                        <span style={{ color: meta.color }}>{meta.icon} {push ? meta.label : 'Checking…'}</span>
+                      </p>
+                      <p className="sp-danger-desc">
+                        {push?.status === 'working'        && 'The server can reach Firebase — phone notifications will be delivered.'}
+                        {push?.status === 'configured'     && 'Project ID and credentials are set. Click “Test now” to confirm the server can actually reach Firebase.'}
+                        {push?.status === 'misconfigured'  && (push?.error || 'Configured, but the server could not authenticate with Firebase.')}
+                        {push?.status === 'not_configured' && 'Set FCM_PROJECT_ID and GOOGLE_APPLICATION_CREDENTIALS (or FCM_CREDENTIALS_JSON) on the server to enable phone push.'}
+                        {push?.status === 'error'          && (push?.error || 'Could not reach the server.')}
+                        {!push && 'Checking push configuration…'}
+                      </p>
+                      {push && (
+                        <p className="sp-danger-desc" style={{ opacity:.7, marginTop:'6px', fontSize:'12px' }}>
+                          Project&nbsp;ID: {push.project_id_set ? 'set' : 'missing'} ·
+                          credentials: {push.credentials_set ? (push.credentials_source || 'set') : 'missing'} ·
+                          google-auth: {push.google_auth_installed ? 'installed' : 'missing'} ·
+                          registered devices: {push.device_tokens ?? '—'}
+                          {typeof push.my_device_tokens === 'number' && ` (yours: ${push.my_device_tokens})`}
+                        </p>
+                      )}
+                    </div>
+                    <button className="sp-btn-logout" disabled={pushBusy}
+                      style={{ background: meta.color, color:'#fff' }}
+                      onClick={() => loadPush(true)}>
+                      {pushBusy ? 'Testing…' : 'Test now'}
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {isBoss && (
+                <div className="sp-danger-card" style={{ borderColor:'rgba(220,15,15,0.4)', marginTop:'14px' }}>
+                  <div className="sp-danger-info">
+                    <p className="sp-danger-title" style={{ color:'var(--crimson)' }}>Delete service</p>
+                    <p className="sp-danger-desc">
+                      Permanently delete this service and everything in it — queues, tickets,
+                      team members and schedule. This cannot be undone.
+                    </p>
+                  </div>
+                  <button className="sp-btn-logout" style={{ background:'var(--crimson)', color:'#fff' }}
+                    onClick={() => { setDeleteErr(''); setShowDeleteService(true); }}>
+                    Delete service
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -590,6 +675,29 @@ export default function SettingsPage() {
             <div className="sp-modal-actions">
               <button className="sp-btn-ghost"  onClick={() => setShowLogout(false)}>Cancel</button>
               <button className="sp-btn-logout" onClick={logout}>Yes, sign out</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteService && (
+        <div className="sp-overlay" onClick={() => setShowDeleteService(false)}>
+          <div className="sp-modal" onClick={e => e.stopPropagation()}>
+            <p className="sp-modal-icon">🗑</p>
+            <h2 className="sp-modal-title">Delete this service?</h2>
+            <p className="sp-modal-sub">
+              This permanently removes the service and ALL its queues, tickets, team
+              members and schedule. This cannot be undone.
+            </p>
+            {deleteErr && (
+              <div className="auth-error" style={{ marginBottom:'10px' }}>⚠ {deleteErr}</div>
+            )}
+            <div className="sp-modal-actions">
+              <button className="sp-btn-ghost" onClick={() => setShowDeleteService(false)}>Cancel</button>
+              <button className="sp-btn-logout" style={{ background:'var(--crimson)', color:'#fff' }}
+                disabled={deletingService} onClick={handleDeleteService}>
+                {deletingService ? 'Deleting…' : 'Delete forever'}
+              </button>
             </div>
           </div>
         </div>

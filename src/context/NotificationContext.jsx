@@ -86,6 +86,9 @@ export function NotificationProvider({ children }) {
 
   // ── TOAST MANAGEMENT ─────────────────────────────────────
   const _addToast = useCallback((toast) => {
+    // #6 — when muted, suppress every bottom-right pop-up (auto + action
+    // toasts). The bell list and unread badge are unaffected.
+    if (mutedRef.current) return;
     const id = ++toastIdRef.current;
     setToasts(prev => {
       // Max 3 toasts at a time — drop oldest if needed
