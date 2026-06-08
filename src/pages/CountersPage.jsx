@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DashLayout    from '../components/DashboardLayout';
 import { useSession } from '../hooks/useSession';
 import {
@@ -96,14 +96,21 @@ export default function CounterPage() {
   };
 
   // ── LOAD TICKETS ─────────────────────────────────────────
+  // A monotonically increasing token guards against a stale in-flight
+  // request (e.g. a background poll fired just before "call next") landing
+  // last and clobbering fresh state — which made a just-called ticket
+  // briefly vanish. Only the most recently started load applies its result.
+  const loadSeqRef = useRef(0);
   const load = useCallback(async (silent = false) => {
     if (!user?.service_id || !setupDone) return;
+    const seq = ++loadSeqRef.current;
     if (!silent) { setLoading(true); setError(''); }
     const data = await getCounterTickets({
       serviceId:   user.service_id,
       queueIds:    selectedQueues.join(','),
       counterName: counterName.trim(),
     });
+    if (seq !== loadSeqRef.current) return;   // a newer load started; discard
     if (data.success) {
       setServing(data.serving || null);
       setWaiting(data.waiting || []);
@@ -124,19 +131,19 @@ export default function CounterPage() {
 
   // ── #1 SILENT AUTO-REFRESH (live serving board) ──────────
   // Fast cadence since this is the agent's live view. Pauses while
-  // a confirm dialog is open or the tab is hidden; refreshes at once
-  // when the tab regains focus.
+  // a confirm dialog is open, an action is running, or the tab is
+  // hidden; refreshes at once when the tab regains focus.
   useEffect(() => {
     if (!setupDone) return;
     const tick = () => {
-      if (document.hidden || confirmId) return;
+      if (document.hidden || confirmId || actionLoading) return;
       load(true);
     };
     const id = setInterval(tick, 5000);
-    const onVisible = () => { if (!document.hidden && !confirmId) tick(); };
+    const onVisible = () => { if (!document.hidden && !confirmId && !actionLoading) tick(); };
     document.addEventListener('visibilitychange', onVisible);
     return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVisible); };
-  }, [setupDone, confirmId, load]);
+  }, [setupDone, confirmId, actionLoading, load]);
 
   // ── APPLY RESPONSE ───────────────────────────────────────
   const applyResponse = (data) => {

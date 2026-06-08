@@ -124,6 +124,12 @@ export default function LoginPage() {
           }
         />
 
+        <div style={{ textAlign: 'right', marginTop: '-4px', marginBottom: '4px' }}>
+          <button type="button" className="auth-link" onClick={() => navigate('/forgot-password')}>
+            Forgot password?
+          </button>
+        </div>
+
         <button type="submit" className="auth-submit" disabled={loading}>
           {loading ? <span className="auth-spinner" /> : 'SIGN IN'}
         </button>

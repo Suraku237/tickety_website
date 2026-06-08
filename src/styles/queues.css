@@ -428,3 +428,66 @@
     display: none;
   }
 }
+
+/* ============================================================
+   #2/#3 — Split views: create/list grid + full-width manage
+   ============================================================ */
+.qp-list-view { display: flex; flex-direction: column; gap: 18px; }
+.qp-list-toolbar {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+}
+.qp-list-h   { font-size: 18px; font-weight: 800; color: var(--text); margin: 0; }
+.qp-list-sub { font-size: 12.5px; color: var(--muted); margin: 4px 0 0; max-width: 60ch; }
+
+.qp-create-form--wide { max-width: 640px; }
+.qp-create-hint { font-size: 11.5px; color: var(--muted); opacity: .8; margin: 8px 0 0; }
+
+/* Responsive card grid (no cramped fixed sidebar anymore) */
+.qp-queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.qp-queue-grid .qp-queue-card { cursor: default; }
+
+/* Copyable join-link box (#3) */
+.qp-linkbox-label {
+  font-size: 9px; letter-spacing: 1.4px; color: var(--muted);
+  font-weight: 800; margin: 14px 0 6px;
+}
+.qp-linkbox {
+  display: flex; gap: 6px; align-items: stretch;
+}
+.qp-linkbox-input {
+  flex: 1; min-width: 0; font-size: 12px; color: var(--text);
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 8px 10px; font-family: monospace;
+}
+.qp-linkbox-copy {
+  flex-shrink: 0; border: none; border-radius: 9px; cursor: pointer;
+  background: var(--crimson, #DC0F0F); color: #fff; font-weight: 700;
+  font-size: 12px; padding: 0 14px;
+}
+.qp-card-btn--manage { background: rgba(59,130,246,0.12); color: #3B82F6; }
+
+/* Full-width manage view */
+.qp-manage-view { display: flex; flex-direction: column; gap: 16px; }
+.qp-manage-header {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.qp-manage-titles { display: flex; flex-direction: column; }
+.qp-back-btn {
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); border-radius: 10px; padding: 8px 14px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.qp-back-btn:hover { background: var(--card2); }
+.qp-manage-issue { margin-left: auto; }
+
+/* Manage table fills the width — no inner scroll box, no clipping */
+.qp-manage-view .qp-table-wrap { overflow: visible; width: 100%; }
+.qp-manage-view .qp-table { width: 100%; }
+
+/* Actions menu opens up or down depending on available space */
+.qp-dropdown--down { top: calc(100% + 6px); bottom: auto; }
+.qp-dropdown--up   { top: auto; bottom: calc(100% + 6px); }

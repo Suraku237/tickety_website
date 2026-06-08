@@ -4,7 +4,7 @@
 // OOP Principle: Singleton, Encapsulation, Abstraction
 // =============================================================
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://tickety.duckdns.org/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'tickety.duckdns.org/api';
 
 const WEB_HEADERS = {
   'Content-Type': 'application/json',
@@ -81,6 +81,28 @@ export const verifyEmail = ({ email, code }) =>
 
 export const resendOtp   = ({ email }) =>
   _post('/resend-otp', { email });
+
+// --- Forgot password (3-step reset) ---
+export const forgotPassword  = ({ email }) =>
+  _post('/forgot-password', { email });
+
+export const verifyResetCode = ({ email, code }) =>
+  _post('/verify-reset-code', { email, code });
+
+export const resetPassword   = ({ email, code, newPassword }) =>
+  _post('/reset-password', { email, code, new_password: newPassword });
+
+// --- Delete service (boss only) ---
+export const deleteService = ({ serviceId, userId }) =>
+  _delete(`/services/${serviceId}?user_id=${userId}`);
+
+// --- Push notifications health ---
+export const getPushHealth = ({ probe = false, userId } = {}) => {
+  const params = {};
+  if (probe)  params.probe = '1';
+  if (userId) params.user_id = userId;
+  return _get('/push/health', params);
+};
 
 // =============================================================
 // SERVICE
