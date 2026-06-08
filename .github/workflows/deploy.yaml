@@ -6,8 +6,37 @@ on:
       - main
 
 jobs:
+  # ── 1. Tests run on the GitHub runner first ───────────────────────────────
+  test:
+    name: Run Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # Use `npm ci` if you commit package-lock.json (faster, reproducible);
+        # otherwise switch to `npm install`.
+        run: npm ci
+
+      - name: Run unit tests
+        env:
+          CI: true            # forces Jest to run once, not in watch mode
+        # To TEMPORARILY let deploys through while you adapt the tests,
+        # uncomment the next line (NOT recommended long-term):
+        # continue-on-error: true
+        run: npm test
+
+  # ── 2. Build + deploy only after tests pass ───────────────────────────────
   deploy:
     name: Build and Deploy
+    needs: test            # <-- gate: requires the `test` job to succeed
     runs-on: ubuntu-latest
 
     steps:
