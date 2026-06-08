@@ -144,7 +144,7 @@ export default function ForgotPasswordPage() {
       {step === 1 && (
         <form className="auth-form" onSubmit={handleRequest}>
           <FormField
-            label="EMAIL ADDRESS" type="email" placeholder="you@company.com"
+            label="EMAIL ADDRESS" type="email" placeholder="you@gmail.com"
             value={email} onChange={setEmail} autoComplete="email" icon={EMAIL_ICON} />
           <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? <span className="auth-spinner" /> : 'SEND RESET CODE'}

@@ -95,7 +95,7 @@ export default function LoginPage() {
         <FormField
           label="EMAIL ADDRESS"
           type="email"
-          placeholder="you@company.com"
+          placeholder="you@gmail.com"
           value={email}
           onChange={setEmail}
           autoComplete="email"

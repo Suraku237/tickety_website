@@ -221,7 +221,7 @@ export default function CounterPage() {
               <label className="cs-label">YOUR COUNTER NAME / NUMBER</label>
               <input
                 className="cs-input"
-                placeholder="e.g. Counter A, Guichet 3, Window 2"
+                placeholder="Counter A?, Guichet 3?, Window 2?"
                 value={counterName}
                 onChange={e => setCounterName(e.target.value)}
               />

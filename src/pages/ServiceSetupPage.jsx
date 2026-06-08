@@ -93,7 +93,7 @@ export default function ServiceSetupPage() {
         <FormField
           label="SERVICE / ENTERPRISE NAME"
           type="text"
-          placeholder="e.g. City Hall, MediCare Clinic…"
+          placeholder="BanK?, Agency?"
           value={serviceName}
           onChange={setServiceName}
           autoFocus

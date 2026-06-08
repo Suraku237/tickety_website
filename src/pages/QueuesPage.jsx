@@ -332,7 +332,7 @@ export default function QueuesPage() {
             <div className="qp-create-form qp-create-form--wide">
               <p className="qp-create-label">NEW QUEUE</p>
               <div className="qp-create-row">
-                <input className="qp-input" placeholder="Queue name (e.g. Bill Payment)"
+                <input className="qp-input" placeholder="Queue name "
                   value={newName} onChange={e => setNewName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleCreateQueue()} autoFocus />
                 <button className="qp-btn-primary" onClick={handleCreateQueue} disabled={creating}>

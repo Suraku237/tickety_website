@@ -236,7 +236,7 @@ export default function InvitePage() {
 
           <form className="auth-form" onSubmit={handleRegister}>
             <FormField label="FULL NAME / USERNAME" type="text"
-              placeholder="e.g. John Doe" value={username} onChange={setUsername}
+              placeholder=" " value={username} onChange={setUsername}
               icon={
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="2">
@@ -246,7 +246,7 @@ export default function InvitePage() {
               }
             />
             <FormField label="EMAIL ADDRESS" type="email"
-              placeholder="you@company.com" value={email} onChange={setEmail}
+              placeholder="you@gmail.com" value={email} onChange={setEmail}
               autoComplete="email"
               icon={
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"

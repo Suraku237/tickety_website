@@ -349,7 +349,7 @@ export default function SettingsPage() {
                       <label className="sp-label">NEW EMAIL ADDRESS</label>
                       <input className="sp-input" type="email" value={newEmail}
                         onChange={e => setNewEmail(e.target.value)}
-                        placeholder="new@company.com" autoFocus />
+                        placeholder="new@gmail.com" autoFocus />
                     </div>
                     {emailErr && <div className="sp-error-banner">⚠ {emailErr}</div>}
                     <div style={{ display:'flex', gap:'10px' }}>
